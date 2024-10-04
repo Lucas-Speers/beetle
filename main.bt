@@ -1,5 +1,6 @@
 
 
 func main() {
+    let number = 15;
     print("Hello World! 🗿");
 }
