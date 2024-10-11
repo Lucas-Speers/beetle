@@ -7,6 +7,7 @@ use lex::tokenize;
 mod args;
 mod files;
 mod lex;
+mod ast;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();

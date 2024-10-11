@@ -1,16 +1,31 @@
-use std::char;
-
 use anyhow::Result;
 
 #[derive(PartialEq, Clone)]
 #[derive(Debug)]
 pub enum Token {
+    Func,
     Import,
-    Function,
+    Let,
+    If,
+    Else,
+    SetEqual,
+    IsEqual,
+    Semicolon,
+    Comma,
+    Period,
+    Colon,
+    NameSpace,
+    LessThan,
+    GreaterThan,
+    LeftParentheses,
+    RightParentheses,
+    LeftBracket,
+    RightBracket,
+    LeftCurlyBracket,
+    RightCurlyBracket,
     Identifier(String),
     NumLiteral(String),
     StringLiteral(String),
-    Comment,
 }
 
 pub fn tokenize(input: &str) -> Result<Vec<Token>> {
@@ -36,7 +51,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
         match char {
             '/' => {
                 if let Some('/') = chars.peek() {
-                    while let Some(_) = chars.next_if(|c| *c == '\n') {}
+                    while let Some(_) = chars.next_if(|c| *c != '\n') {}
                 } else {
                     // TODO division operator
                 }
@@ -53,14 +68,85 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>> {
                 tokens.push(Token::StringLiteral(string_literal));
                 continue;
             }
+            '(' => {
+                tokens.push(Token::LeftParentheses);
+                continue;
+            }
+            ')' => {
+                tokens.push(Token::RightParentheses);
+                continue;
+            }
+            '{' => {
+                tokens.push(Token::LeftCurlyBracket);
+                continue;
+            }
+            '}' => {
+                tokens.push(Token::RightCurlyBracket);
+                continue;
+            }
+            '[' => {
+                tokens.push(Token::LeftBracket);
+                continue;
+            }
+            ']' => {
+                tokens.push(Token::RightBracket);
+                continue;
+            }
+            ';' => {
+                tokens.push(Token::Semicolon);
+                continue;
+            }
+            '=' => {
+                if let Some('=') = chars.peek() {
+                    tokens.push(Token::IsEqual);
+                    chars.next();
+                    continue;
+                }
+                tokens.push(Token::SetEqual);
+                continue;
+            }
+            ':' => {
+                if let Some(':') = chars.peek() {
+                    tokens.push(Token::NameSpace);
+                    chars.next();
+                    continue;
+                }
+                tokens.push(Token::Colon);
+                continue;
+            }
+            '<' => {
+                tokens.push(Token::LessThan);
+                continue;
+            }
+            '>' => {
+                tokens.push(Token::GreaterThan);
+                continue;
+            }
+            ',' => {
+                tokens.push(Token::Comma);
+                continue;
+            }
+            '.' => {
+                tokens.push(Token::Period);
+                continue;
+            }
             _ => ()
         }
-        // match identifiers
+        // match identifiers/keywords
         let mut identifier = String::from(char);
         while let Some(char) = chars.next_if(|c| c.is_alphabetic()) {
             identifier.push(char);
         }
-        tokens.push(Token::Identifier(identifier));
+        tokens.push(
+            match identifier.as_str() {
+                "func" => Token::Func,
+                "import" => Token::Import,
+                "let" => Token::Let,
+                "if" => Token::If,
+                "else" => Token::Else,
+                _ => Token::Identifier(identifier)
+            }
+        );
     }
 
     Ok(tokens)
