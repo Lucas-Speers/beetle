@@ -1,8 +1,12 @@
-use std::path::Path;
+use std::{env, path::Path};
 
-use anyhow::{Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 
 pub fn read_full_file(path: &Path) -> Result<String> {
+
+    if !path.exists() {
+        return Err(anyhow!("File '{}' does not exist in path '{}'", path.display(), env::current_dir()?.display()));
+    }
 
     let content = std::fs::read(path)
         .with_context(|| format!("File could not be read: \'{}\'", path.display()))?;
