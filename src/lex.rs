@@ -1,16 +1,14 @@
 use std::{char, iter::Peekable, process::exit, str::Chars};
 
-use anyhow::Result;
-
 
 /// The most basic building blocks of a program
 #[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
+    pub token_type: TokenType,
     /// The (Line, Column) of the token
-    position: (u64, u64),
+    pub position: (u64, u64),
     /// The filename where the token originated
-    filename: String,
+    pub filename: String,
 }
 
 /// hacky way to update the position of the current char
@@ -41,7 +39,7 @@ pub enum TokenType {
     TokSymbol {
         symbol: Symbol,
     },
-    TokIndentifier {
+    TokIdentifier {
         name: String,
     },
     TokNumber {
@@ -58,6 +56,8 @@ pub enum TokenType {
 pub enum Symbol {
     Addition,
     Subtraction,
+    Division,
+    LeftParren,
     // TODO: () {} [] ! ? . < > <= >= etc
 }
 
@@ -66,13 +66,33 @@ impl Symbol {
         if let Some(char) = chars.peek() {
             let symbol: Symbol;
             match char {
-                '+' => symbol = Symbol::Addition,
-                '-' => symbol = Symbol::Subtraction,
-                ')' => symbol = Symbol::Addition,
+                '+' => {
+                    chars.neext(position);
+                    return Some(Symbol::Addition);
+                },
+                '-' => {
+                    chars.neext(position);
+                    return Some(Symbol::Subtraction);
+                },
+                '(' => {
+                    chars.neext(position);
+                    return Some(Symbol::LeftParren);
+                },
+                '/' => {
+                    chars.neext(position);
+                    if let Some( next ) = chars.peek() {
+                        if *next == '/' {
+                            loop {
+                                if let Some('\n') = chars.neext(position) {
+                                    return None;
+                                }
+                            }
+                        }
+                    }
+                    return Some(Symbol::Division)
+                }
                 _ => return None
             }
-            chars.neext(position);
-            Some(symbol)
         } else {
             None
         }
@@ -119,7 +139,7 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
                 } else if let Some(symbol) = Symbol::from(&mut iter, &mut position) {
                     token.token_type = TokSymbol { symbol };
                 } else {
-                    token.token_type = TokIndentifier { name: String::new() }
+                    token.token_type = TokIdentifier { name: String::new() }
                 }
             },
             TokComment => {
@@ -132,11 +152,11 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
                 tokens.push(token.clone());
                 token.token_type = TokNone;
             }
-            TokSymbol { symbol } => {
+            TokSymbol { symbol: _ } => {
                 tokens.push(token.clone());
                 token.token_type = TokNone;
             }
-            TokIndentifier { name } => {
+            TokIdentifier { name } => {
                 if char.is_whitespace() {
                     iter.neext(&mut position);
                     tokens.push(token.clone());
@@ -149,7 +169,7 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
                     name.push(char);
                 }
             },
-            TokNumber { has_decimal, whole, decimal } => {
+            TokNumber { has_decimal, whole: _, decimal: _ } => {
                 if char.is_ascii_digit() {
                     iter.neext(&mut position);
                     // TODO
@@ -184,154 +204,3 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
     tokens
 }
 
-// #[derive(PartialEq, Clone)]
-// #[derive(Debug)]
-// pub enum Token {
-//     Func,
-//     Import,
-//     Let,
-//     If,
-//     Else,
-//     SetEqual,
-//     IsEqual,
-//     Semicolon,
-//     Comma,
-//     Period,
-//     Colon,
-//     NameSpace,
-//     LessThan,
-//     GreaterThan,
-//     LeftParentheses,
-//     RightParentheses,
-//     LeftBracket,
-//     RightBracket,
-//     LeftCurlyBracket,
-//     RightCurlyBracket,
-//     Identifier(String),
-//     NumLiteral(String),
-//     StringLiteral(String),
-// }
-
-// pub fn tokenize(input: &str) -> Result<Vec<Token>> {
-
-//     let mut chars = input.chars().peekable();
-//     let mut tokens: Vec<Token> = Vec::new();
-
-//     while let Some(char) = chars.next() {
-//         // match whitespace
-//         if char.is_whitespace() {
-//             continue;
-//         }
-//         // match numbers
-//         if char.is_ascii_digit() {
-//             let mut lit_number = String::from(char);
-//             while let Some(char) = chars.next_if(|c| c.is_ascii_digit()) {
-//                 lit_number.push(char);
-//             }
-//             tokens.push(Token::NumLiteral(lit_number));
-//             continue;
-//         }
-//         // match sybols
-//         match char {
-//             '/' => {
-//                 if let Some('/') = chars.peek() {
-//                     while let Some(_) = chars.next_if(|c| *c != '\n') {}
-//                 } else {
-//                     // TODO division operator
-//                 }
-//                 continue;
-//             }
-//             '"' => { // TODO: string escaping
-//                 let mut string_literal = String::new();
-//                 while let Some(char) = chars.next() {
-//                     if char == '"' {
-//                         break;
-//                     }
-//                     string_literal.push(char);
-//                 }
-//                 tokens.push(Token::StringLiteral(string_literal));
-//                 continue;
-//             }
-//             '(' => {
-//                 tokens.push(Token::LeftParentheses);
-//                 continue;
-//             }
-//             ')' => {
-//                 tokens.push(Token::RightParentheses);
-//                 continue;
-//             }
-//             '{' => {
-//                 tokens.push(Token::LeftCurlyBracket);
-//                 continue;
-//             }
-//             '}' => {
-//                 tokens.push(Token::RightCurlyBracket);
-//                 continue;
-//             }
-//             '[' => {
-//                 tokens.push(Token::LeftBracket);
-//                 continue;
-//             }
-//             ']' => {
-//                 tokens.push(Token::RightBracket);
-//                 continue;
-//             }
-//             ';' => {
-//                 tokens.push(Token::Semicolon);
-//                 continue;
-//             }
-//             '=' => {
-//                 if let Some('=') = chars.peek() {
-//                     tokens.push(Token::IsEqual);
-//                     chars.next();
-//                     continue;
-//                 }
-//                 tokens.push(Token::SetEqual);
-//                 continue;
-//             }
-//             ':' => {
-//                 if let Some(':') = chars.peek() {
-//                     tokens.push(Token::NameSpace);
-//                     chars.next();
-//                     continue;
-//                 }
-//                 tokens.push(Token::Colon);
-//                 continue;
-//             }
-//             '<' => {
-//                 tokens.push(Token::LessThan);
-//                 continue;
-//             }
-//             '>' => {
-//                 tokens.push(Token::GreaterThan);
-//                 continue;
-//             }
-//             ',' => {
-//                 tokens.push(Token::Comma);
-//                 continue;
-//             }
-//             '.' => {
-//                 tokens.push(Token::Period);
-//                 continue;
-//             }
-//             _ => ()
-//         }
-//         // match identifiers/keywords
-//         let mut identifier = String::from(char);
-//         while let Some(char) = chars.next_if(|c| c.is_alphabetic()) {
-//             identifier.push(char);
-//         }
-//         tokens.push(
-//             match identifier.as_str() {
-//                 "func" => Token::Func,
-//                 "import" => Token::Import,
-//                 "let" => Token::Let,
-//                 "if" => Token::If,
-//                 "else" => Token::Else,
-//                 _ => Token::Identifier(identifier)
-//             }
-//         );
-//     }
-
-//     Ok(tokens)
-// }
