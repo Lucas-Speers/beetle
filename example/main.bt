@@ -2,15 +2,6 @@
 import "example/std.bt"
 import "example/lib.bt"
 
-func main(args: List<String>) {
-    let rand = Random::seed(1234);
-
-    if (args.contains("--help")) {
-        let number = 42;
-    } else if (rand.get()%100 == 0) {
-        print("Wow, thats lucky");
-    } else {
-        
-    }
-    print("Hello World! 🗿");
+func main(args: Args) {
+    let x = (10);
 }

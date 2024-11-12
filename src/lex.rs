@@ -2,7 +2,7 @@ use std::{char, iter::Peekable, process::exit, str::Chars};
 
 
 /// The most basic building blocks of a program
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     /// The (Line, Column) of the token
@@ -31,7 +31,7 @@ impl CustomNext for Peekable<Chars<'_>> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     TokNone,
     TokComment,
@@ -52,13 +52,14 @@ pub enum TokenType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Symbol {
     Addition,
     Subtraction,
     Division,
     LeftParren,
-    // TODO: () {} [] ! ? . < > <= >= etc
+    RightParren,
+    // TODO: {} [] ! ? . < > <= >= etc
 }
 
 impl Symbol {
@@ -77,6 +78,10 @@ impl Symbol {
                 '(' => {
                     chars.neext(position);
                     return Some(Symbol::LeftParren);
+                },
+                ')' => {
+                    chars.neext(position);
+                    return Some(Symbol::RightParren);
                 },
                 '/' => {
                     chars.neext(position);
@@ -183,7 +188,8 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
                     tokens.push(token.clone());
                     token.token_type = TokSymbol { symbol };
                 } else {
-                    token_error(position, filename, "cannot parse number")
+                    tokens.push(token.clone());
+                    token.token_type = TokNone;
                 }
                 
             },
