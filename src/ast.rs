@@ -44,31 +44,68 @@ impl TokenIter {
         let last = vec[0].clone();
         TokenIter { vec, index: 0, last }
     }
-    fn next(&mut self) -> Option<Token> {
-        if self.index == self.vec.len() {None}
+    fn next(&mut self) -> Token {
+        if self.index == self.vec.len() {
+            parse_error("Reached EOF", &self);
+        }
         else {
             let value = self.vec[self.index].clone();
             self.last = value.clone();
             self.index += 1;
-            Some(value)
+            value
         }
     }
     fn peek(&mut self) -> Option<Token> {
         if self.index == self.vec.len() {None}
         else {
-            let value = self.vec[self.index].clone();
-            Some(value)
+            Some(self.vec[self.index].clone())
         }
+    }
+    fn has_more(&self) -> bool {
+        self.index != self.vec.len()
     }
 }
 
 pub fn ast_from_tokens(tokens_vec: Vec<Token>) {
     let mut tokens = TokenIter::new(tokens_vec);
-    let ast: Vec<ASTree> = Vec::new();
-    loop {
-        println!("AST: {:?}", parse_expresion(&mut tokens));
+    parse_all(&mut tokens);
+}
+
+fn parse_all(tokens: &mut TokenIter) {
+    parse_imports(tokens);
+    parse_functions(tokens);
+}
+
+fn parse_imports(tokens: &mut TokenIter) {
+    let mut imported_files = Vec::new();
+    loop { // check all the imports
+        if let Some(token) = tokens.peek() {
+            if let TokIdentifier { name } = token.token_type {
+                if name == "import" {
+                    tokens.next();
+                    if let TokString { content } = tokens.next().token_type {
+                        imported_files.push(content);
+                        continue;
+                    } else {unreachable!();}
+                }
+            }
+        }
+        break;
+    }
+    dbg!(imported_files);
+}
+
+fn parse_functions(tokens: &mut TokenIter) {
+    while tokens.has_more() {
+        if let TokIdentifier { name } = tokens.next().token_type {
+        
+        } else {
+            parse_error("Expected function decleration here", tokens);
+        }
     }
 }
+
+
 
 
 /// expected_token may be `;` or `)` and so on
@@ -97,26 +134,29 @@ fn parse_expresion(tokens: &mut TokenIter) -> ASTree {
         TokNumber { .. } => parse_number(tokens),
         TokIdentifier { .. } => parse_identifier(tokens),
         TokString { .. } => parse_string(tokens),
-        _ => todo!()
+        _ => {
+            tokens.next();
+            parse_expresion(tokens)
+        },
     }
 }
 
 fn parse_number(tokens: &mut TokenIter) -> ASTree {
-    if let TokNumber { has_decimal, whole, decimal } = tokens.next().unwrap().token_type {
+    if let TokNumber { has_decimal, whole, decimal } = tokens.next().token_type {
         return ASTree::NumberLiteral { is_float: has_decimal, whole, decimal};
     }
     panic!("Expected number");
 }
 
 fn parse_string(tokens: &mut TokenIter) -> ASTree {
-    if let TokString { content } = tokens.next().unwrap().token_type {
+    if let TokString { content } = tokens.next().token_type {
         return ASTree::StringLiteral { string: content.clone() };
     }
     panic!("expected string");
 }
 
 fn parse_parren(tokens: &mut TokenIter) -> Vec<ASTree> {
-    if let TokSymbol { symbol: Symbol::LeftParren } = tokens.next().unwrap().token_type {
+    if let TokSymbol { symbol: Symbol::LeftParren } = tokens.next().token_type {
         let mut items = Vec::new();
         loop {
             items.push(parse_any_until(tokens, vec![Symbol::RightParren]));
@@ -133,7 +173,7 @@ fn parse_parren(tokens: &mut TokenIter) -> Vec<ASTree> {
 
 
 fn parse_identifier(tokens: &mut TokenIter) -> ASTree {
-    if let TokIdentifier { name } = tokens.next().unwrap().token_type {
+    if let TokIdentifier { name } = tokens.next().token_type {
         // check if the next char is a `(`
         if let Some(token) = tokens.peek() {
             if let TokSymbol { symbol: Symbol::LeftParren } = token.token_type {
@@ -145,6 +185,12 @@ fn parse_identifier(tokens: &mut TokenIter) -> ASTree {
     panic!("Expected identifier");
 }
 
-fn parse_error(error: &str, tokens: TokenIter) {
-    
+fn parse_error(error: &str, tokens: &TokenIter) -> ! {
+    println!(
+        "ERROR {error} at ({}, {}) in {}",
+        tokens.last.position.0,
+        tokens.last.position.1,
+        tokens.last.filename,
+    );
+    std::process::exit(1);
 }
