@@ -61,6 +61,14 @@ impl TokenIter {
             Some(self.vec[self.index].clone())
         }
     }
+    fn peek_expect(&mut self) -> Token {
+        if self.index == self.vec.len() {
+            parse_error("Reached EOF", &self);
+        }
+        else {
+            self.vec[self.index].clone()
+        }
+    }
     fn has_more(&self) -> bool {
         self.index != self.vec.len()
     }
@@ -72,11 +80,13 @@ pub fn ast_from_tokens(tokens_vec: Vec<Token>) {
 }
 
 fn parse_all(tokens: &mut TokenIter) {
-    parse_imports(tokens);
+    println!("parse_all");
+    let imports = parse_imports(tokens);
     parse_functions(tokens);
 }
 
-fn parse_imports(tokens: &mut TokenIter) {
+fn parse_imports(tokens: &mut TokenIter) -> Vec<String> {
+    println!("parse_imports");
     let mut imported_files = Vec::new();
     loop { // check all the imports
         if let Some(token) = tokens.peek() {
@@ -92,24 +102,71 @@ fn parse_imports(tokens: &mut TokenIter) {
         }
         break;
     }
-    dbg!(imported_files);
+    dbg!(imported_files)
 }
 
 fn parse_functions(tokens: &mut TokenIter) {
+    println!("parse_function");
     while tokens.has_more() {
         if let TokIdentifier { name } = tokens.next().token_type {
-        
+            if name != "func" {parse_error("Expected `func` keyword", tokens)}
+            parse_function_decleration(tokens);
         } else {
             parse_error("Expected function decleration here", tokens);
         }
     }
 }
 
+fn parse_function_decleration(tokens: &mut TokenIter) {
+    println!("parse_function_decleration");
+    if let TokIdentifier { name } = tokens.next().token_type {
+        if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
+        let args = parse_function_params(tokens);
+        if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftCurly }) {parse_error("Expected `{` for the function code block", tokens)}
+        // let code = parse_any_until(tokens, vec![Symbol::RightCurly]); TODO
+    }
+    parse_error("Expected function name", tokens);
+}
+
+fn parse_function_params(tokens: &mut TokenIter) -> Vec<(String, String)> {
+    println!("parse_function_params");
+    let mut params = Vec::new();
+    loop {
+        if tokens.peek_expect().token_type == (TokSymbol { symbol: Symbol::RightParren }) {
+            tokens.next();
+            return params;
+        }
+        params.push(parse_full_varriable(tokens));
+        if tokens.peek_expect().token_type == (TokSymbol { symbol: Symbol::Comma }) {
+            tokens.next();
+        }
+    }
+}
+
+fn parse_full_varriable(tokens: &mut TokenIter) -> (String, String) {
+    println!("parse_full_variable");
+    if let TokIdentifier { name } = tokens.next().token_type {
+        if let TokSymbol { symbol: Symbol::Colon } = tokens.next().token_type {
+            return (name, parse_type(tokens));
+        }
+    }
+    parse_error("Expected variable name", tokens);
+}
+
+fn parse_type(tokens: &mut TokenIter) -> String {
+    println!("parse_type");
+    if let TokIdentifier { name } = tokens.next().token_type {
+        return name;
+    }
+    parse_error("Expected type", tokens);
+}
 
 
 
-/// expected_token may be `;` or `)` and so on
+
+/// expected tokens may be `;` or `)` and so on
 fn parse_any_until(tokens: &mut TokenIter, expected_tokens: Vec<Symbol>) -> ASTree {
+    println!("parse_any_until");
     let mut current_exp;
     loop {
         current_exp = parse_expresion(tokens);

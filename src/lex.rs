@@ -59,6 +59,10 @@ pub enum Symbol {
     Division,
     LeftParren,
     RightParren,
+    LeftCurly,
+    RightCurly,
+    Colon,
+    Comma
     // TODO: {} [] ! ? . < > <= >= etc
 }
 
@@ -82,6 +86,22 @@ impl Symbol {
                 ')' => {
                     chars.neext(position);
                     return Some(Symbol::RightParren);
+                },
+                '{' => {
+                    chars.neext(position);
+                    return Some(Symbol::LeftCurly);
+                },
+                '}' => {
+                    chars.neext(position);
+                    return Some(Symbol::RightCurly);
+                },
+                ',' => {
+                    chars.neext(position);
+                    return Some(Symbol::Comma);
+                },
+                ':' => {
+                    chars.neext(position);
+                    return Some(Symbol::Colon);
                 },
                 '/' => {
                     chars.neext(position);

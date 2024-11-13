@@ -3,5 +3,5 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main(args: Args) {
-    let x = (10);
+    let x = 10;
 }
