@@ -2,6 +2,12 @@ use std::iter::Peekable;
 
 use crate::lex::{Token, Symbol, TokenType::{self, *}};
 
+pub struct FunctionDecleration {
+    name: String,
+    args: Vec<(String, String)>,
+    body: Vec<ASTree>,
+}
+
 #[derive(Debug)]
 pub enum ASTree {
     NumberLiteral {
@@ -20,17 +26,10 @@ pub enum ASTree {
         lhs: Box<ASTree>,
         rhs: Box<ASTree>,
     },
-    Parren {
-        values: Vec<ASTree>,
-    },
     FunctionCall {
         callee: String,
         args: Vec<ASTree>,
     },
-    FunctionDecleration {
-        name: String,
-        args: Vec<(String, String)>,
-    }
 }
 
 struct TokenIter {
@@ -108,11 +107,12 @@ fn parse_imports(tokens: &mut TokenIter) -> Vec<String> {
 fn parse_functions(tokens: &mut TokenIter) {
     println!("parse_function");
     while tokens.has_more() {
+        dbg!(tokens.peek_expect());
         if let TokIdentifier { name } = tokens.next().token_type {
             if name != "func" {parse_error("Expected `func` keyword", tokens)}
             parse_function_decleration(tokens);
         } else {
-            parse_error("Expected function decleration here", tokens);
+            parse_error("Expected function decleration", tokens);
         }
     }
 }
@@ -122,10 +122,13 @@ fn parse_function_decleration(tokens: &mut TokenIter) {
     if let TokIdentifier { name } = tokens.next().token_type {
         if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
         let args = parse_function_params(tokens);
+        dbg!(args);
         if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftCurly }) {parse_error("Expected `{` for the function code block", tokens)}
-        // let code = parse_any_until(tokens, vec![Symbol::RightCurly]); TODO
+        let code = parse_fuction_body(tokens);
     }
-    parse_error("Expected function name", tokens);
+    else {
+        parse_error("Expected function name", tokens);
+    }
 }
 
 fn parse_function_params(tokens: &mut TokenIter) -> Vec<(String, String)> {
@@ -161,26 +164,28 @@ fn parse_type(tokens: &mut TokenIter) -> String {
     parse_error("Expected type", tokens);
 }
 
+fn parse_fuction_body(tokens: &mut TokenIter) -> Vec<ASTree> {
+    let expresions = Vec::new();
+
+    loop {
+        if let TokSymbol { symbol: Symbol::RightCurly } = tokens.peek_expect().token_type {
+            tokens.next();
+            return expresions;
+        }
+        tokens.next();
+    }
+}
+
+
 
 
 
 /// expected tokens may be `;` or `)` and so on
 fn parse_any_until(tokens: &mut TokenIter, expected_tokens: Vec<Symbol>) -> ASTree {
     println!("parse_any_until");
-    let mut current_exp;
+    // let mut current_exp;
     loop {
-        current_exp = parse_expresion(tokens);
-        if let Some(next) = tokens.peek() { // if there is a next token
-            if let TokSymbol { symbol } = &next.token_type {
-                if expected_tokens.contains(&symbol) { // if it is the expected end token
-                    tokens.next(); // consume the last token
-                    return current_exp;
-                }
-            }
-            // TODO chain operators
-            return current_exp;
-        }
-        panic!("Reached EOF error");
+        todo!();
     }
 }
 

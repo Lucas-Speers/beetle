@@ -1,4 +1,6 @@
-use std::path::{Path, PathBuf};
+#![allow(unused)]
+
+use std::path::PathBuf;
 
 use clap::Parser;
 use args::Cli;

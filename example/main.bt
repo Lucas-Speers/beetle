@@ -2,6 +2,6 @@
 import "example/std.bt"
 import "example/lib.bt"
 
-func main(args: Args) {
+func main(args: List<String>, pid: u32) {
     let x = 10;
 }
