@@ -62,7 +62,8 @@ pub enum Symbol {
     LeftCurly,
     RightCurly,
     Colon,
-    Comma
+    Comma,
+    Equal,
     // TODO: {} [] ! ? . < > <= >= etc
 }
 
@@ -102,6 +103,10 @@ impl Symbol {
                 ':' => {
                     chars.neext(position);
                     return Some(Symbol::Colon);
+                },
+                '=' => {
+                    chars.neext(position);
+                    return Some(Symbol::Equal);
                 },
                 '/' => {
                     chars.neext(position);

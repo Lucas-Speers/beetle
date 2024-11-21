@@ -2,6 +2,7 @@ use std::iter::Peekable;
 
 use crate::lex::{Token, Symbol, TokenType::{self, *}};
 
+#[derive(Debug)]
 pub struct FunctionDecleration {
     name: String,
     args: Vec<(String, String)>,
@@ -10,25 +11,22 @@ pub struct FunctionDecleration {
 
 #[derive(Debug)]
 pub enum ASTree {
-    NumberLiteral {
-        is_float: bool,
-        whole: u64,
-        decimal: u64,
+    Let {
+        variable: String,
+        value: ASTValue,
     },
-    StringLiteral {
-        string: String,
+
+}
+
+#[derive(Debug)]
+pub enum ASTValue {
+    Number {
+        left: u64,
+        right: u64,
+        decimal: bool,
     },
-    VarriableName {
-        name: String,
-    },
-    Operator {
-        op: String,
-        lhs: Box<ASTree>,
-        rhs: Box<ASTree>,
-    },
-    FunctionCall {
-        callee: String,
-        args: Vec<ASTree>,
+    String {
+        content: String,
     },
 }
 
@@ -81,7 +79,8 @@ pub fn ast_from_tokens(tokens_vec: Vec<Token>) {
 fn parse_all(tokens: &mut TokenIter) {
     println!("parse_all");
     let imports = parse_imports(tokens);
-    parse_functions(tokens);
+    let functions = parse_functions(tokens);
+    dbg!(imports, functions);
 }
 
 fn parse_imports(tokens: &mut TokenIter) -> Vec<String> {
@@ -101,30 +100,31 @@ fn parse_imports(tokens: &mut TokenIter) -> Vec<String> {
         }
         break;
     }
-    dbg!(imported_files)
+    imported_files
 }
 
-fn parse_functions(tokens: &mut TokenIter) {
+fn parse_functions(tokens: &mut TokenIter) -> Vec<FunctionDecleration> {
+    let mut functions = Vec::new();
     println!("parse_function");
     while tokens.has_more() {
-        dbg!(tokens.peek_expect());
         if let TokIdentifier { name } = tokens.next().token_type {
             if name != "func" {parse_error("Expected `func` keyword", tokens)}
-            parse_function_decleration(tokens);
+            functions.push(parse_function_decleration(tokens));
         } else {
             parse_error("Expected function decleration", tokens);
         }
     }
+    functions
 }
 
-fn parse_function_decleration(tokens: &mut TokenIter) {
+fn parse_function_decleration(tokens: &mut TokenIter) -> FunctionDecleration {
     println!("parse_function_decleration");
     if let TokIdentifier { name } = tokens.next().token_type {
         if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
         let args = parse_function_params(tokens);
-        dbg!(args);
         if tokens.next().token_type != (TokSymbol { symbol: Symbol::LeftCurly }) {parse_error("Expected `{` for the function code block", tokens)}
-        let code = parse_fuction_body(tokens);
+        let body = parse_fuction_body(tokens);
+        return FunctionDecleration { name, args, body };
     }
     else {
         parse_error("Expected function name", tokens);
@@ -165,86 +165,51 @@ fn parse_type(tokens: &mut TokenIter) -> String {
 }
 
 fn parse_fuction_body(tokens: &mut TokenIter) -> Vec<ASTree> {
-    let expresions = Vec::new();
+    let mut expresions = Vec::new();
 
     loop {
         if let TokSymbol { symbol: Symbol::RightCurly } = tokens.peek_expect().token_type {
             tokens.next();
             return expresions;
         }
-        tokens.next();
-    }
-}
-
-
-
-
-
-/// expected tokens may be `;` or `)` and so on
-fn parse_any_until(tokens: &mut TokenIter, expected_tokens: Vec<Symbol>) -> ASTree {
-    println!("parse_any_until");
-    // let mut current_exp;
-    loop {
-        todo!();
-    }
-}
-
-fn parse_expresion(tokens: &mut TokenIter) -> ASTree {
-    let next_token = tokens.peek().expect("end of tokens");
-    dbg!(&next_token.token_type);
-    match &next_token.token_type {
-        TokNumber { .. } => parse_number(tokens),
-        TokIdentifier { .. } => parse_identifier(tokens),
-        TokString { .. } => parse_string(tokens),
-        _ => {
-            tokens.next();
-            parse_expresion(tokens)
-        },
-    }
-}
-
-fn parse_number(tokens: &mut TokenIter) -> ASTree {
-    if let TokNumber { has_decimal, whole, decimal } = tokens.next().token_type {
-        return ASTree::NumberLiteral { is_float: has_decimal, whole, decimal};
-    }
-    panic!("Expected number");
-}
-
-fn parse_string(tokens: &mut TokenIter) -> ASTree {
-    if let TokString { content } = tokens.next().token_type {
-        return ASTree::StringLiteral { string: content.clone() };
-    }
-    panic!("expected string");
-}
-
-fn parse_parren(tokens: &mut TokenIter) -> Vec<ASTree> {
-    if let TokSymbol { symbol: Symbol::LeftParren } = tokens.next().token_type {
-        let mut items = Vec::new();
-        loop {
-            items.push(parse_any_until(tokens, vec![Symbol::RightParren]));
-            // consume any commas
-            // break on `)`
-            if let TokSymbol { symbol: Symbol::LeftParren } = tokens.peek().unwrap().token_type {
-            
+        if let TokIdentifier { name } = tokens.peek_expect().token_type {
+            if name == "let" {
+                expresions.push(parse_let(tokens));
+            }
+            else {
+                parse_error("not implemented", tokens);
             }
         }
     }
-
-    panic!("Expected parentheses")
 }
 
-
-fn parse_identifier(tokens: &mut TokenIter) -> ASTree {
+fn parse_let(tokens: &mut TokenIter) -> ASTree {
     if let TokIdentifier { name } = tokens.next().token_type {
-        // check if the next char is a `(`
-        if let Some(token) = tokens.peek() {
-            if let TokSymbol { symbol: Symbol::LeftParren } = token.token_type {
-                return ASTree::FunctionCall { callee: name, args: parse_parren(tokens) };
+        if let TokIdentifier { name } = tokens.next().token_type {
+            if let TokSymbol { symbol: Symbol::Equal } = tokens.next().token_type {
+                let value = parse_value(tokens);
+                if let TokSemicolon = tokens.next().token_type {
+                    return ASTree::Let { variable: name, value };
+                }
+                parse_error("Expected semicolon", tokens);
             }
+            parse_error("Expected value to assign to variable", tokens);
         }
-        return ASTree::VarriableName { name };
+        parse_error("Expected `=`", tokens);
     }
-    panic!("Expected identifier");
+    parse_error("Expected `let`", tokens);
+}
+
+fn parse_value(tokens: &mut TokenIter) -> ASTValue {
+    let next_token = tokens.next().token_type;
+    if let TokNumber { has_decimal, whole, decimal } = next_token {
+        return ASTValue::Number { left: whole, right: decimal, decimal: has_decimal};
+    }
+    if let TokString { content } = next_token {
+        return ASTValue::String { content };
+    }
+    dbg!(next_token);
+    todo!();
 }
 
 fn parse_error(error: &str, tokens: &TokenIter) -> ! {

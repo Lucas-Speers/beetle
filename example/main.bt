@@ -1,7 +1,7 @@
-// just a bunch of example code
+// just an example program
 import "example/std.bt"
 import "example/lib.bt"
 
-func main(args: List<String>, pid: u32) {
-    let x = 10;
+func main(args: List<String>) {
+    let x = "Hello";
 }
