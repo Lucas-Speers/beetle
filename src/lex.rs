@@ -199,21 +199,27 @@ pub fn tokenize(input: &str, filename: &str) -> Vec<Token> {
                     name.push(char);
                 }
             },
-            TokNumber { has_decimal, whole: _, decimal: _ } => {
+            TokNumber { has_decimal, whole, decimal } => {
                 if char.is_ascii_digit() {
                     iter.neext(&mut position);
-                    // TODO
+                    if !*has_decimal {
+                        *whole *= 10;
+                        *whole += char.to_digit(10).unwrap() as u64;
+                    } else {
+                        *decimal *= 10;
+                        *decimal += char.to_digit(10).unwrap() as u64;
+                    }
                 } else if char == '.' {
                     iter.neext(&mut position);
                     *has_decimal = true;
                 } else if char == ';' {
                     iter.neext(&mut position);
+                    tokens.push(token.clone());
                     token.token_type = TokSemicolon;
                 } else if let Some(symbol) = Symbol::from(&mut iter, &mut position) {
                     tokens.push(token.clone());
                     token.token_type = TokSymbol { symbol };
                 } else {
-                    tokens.push(token.clone());
                     token.token_type = TokNone;
                 }
                 

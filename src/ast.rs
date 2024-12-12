@@ -10,12 +10,24 @@ pub struct FunctionDecleration {
 }
 
 #[derive(Debug)]
+pub struct Function {
+    name: String,
+    args: Vec<ASTValue>,
+}
+
+#[derive(Debug)]
 pub enum ASTree {
     Let {
         variable: String,
         value: ASTValue,
     },
-
+    Assign {
+        variable: String,
+        value: ASTValue,
+    },
+    Function {
+        func: Function,
+    },
 }
 
 #[derive(Debug)]
@@ -27,6 +39,9 @@ pub enum ASTValue {
     },
     String {
         content: String,
+    },
+    Function {
+        func: Function,
     },
 }
 
@@ -66,12 +81,21 @@ impl TokenIter {
             self.vec[self.index].clone()
         }
     }
+    fn peek_ahead_expect(&mut self) -> Token {
+        if self.index >= self.vec.len() {
+            parse_error("Reached EOF", &self);
+        }
+        else {
+            self.vec[self.index+1].clone()
+        }
+    }
     fn has_more(&self) -> bool {
         self.index != self.vec.len()
     }
 }
 
 pub fn ast_from_tokens(tokens_vec: Vec<Token>) {
+    println!("{:?}", tokens_vec);
     let mut tokens = TokenIter::new(tokens_vec);
     parse_all(&mut tokens);
 }
@@ -176,26 +200,47 @@ fn parse_fuction_body(tokens: &mut TokenIter) -> Vec<ASTree> {
             if name == "let" {
                 expresions.push(parse_let(tokens));
             }
-            else {
-                parse_error("not implemented", tokens);
+            else { // variable/function names
+                if let TokSymbol { symbol: Symbol::Equal } = tokens.peek_ahead_expect().token_type {
+                    expresions.push(parse_assignment(tokens));
+                } else if let TokSymbol { symbol: Symbol::LeftParren } = tokens.peek_ahead_expect().token_type {
+                    expresions.push(parse_assignment(tokens));
+                }
+                else {
+                    parse_error("not implemented", tokens);
+                }
             }
         }
     }
 }
 
+fn parse_assignment(tokens: &mut TokenIter) -> ASTree {
+    if let TokIdentifier { name } = tokens.next().token_type { // `var_name`
+        if let TokSymbol { symbol: Symbol::Equal } = tokens.next().token_type { // `=`
+            let value = parse_value(tokens); // ...
+            if let TokSemicolon = tokens.next().token_type { // `;`
+                return ASTree::Assign { variable: name, value };
+            }
+            parse_error("Expected semicolon", tokens);
+        }
+        parse_error("Expected `=`", tokens);
+    }
+    parse_error("Expected variable name", tokens);
+}
+
 fn parse_let(tokens: &mut TokenIter) -> ASTree {
-    if let TokIdentifier { name } = tokens.next().token_type {
-        if let TokIdentifier { name } = tokens.next().token_type {
-            if let TokSymbol { symbol: Symbol::Equal } = tokens.next().token_type {
-                let value = parse_value(tokens);
-                if let TokSemicolon = tokens.next().token_type {
+    if let TokIdentifier { name } = tokens.next().token_type { // `let`
+        if let TokIdentifier { name } = tokens.next().token_type { // `var_name`
+            if let TokSymbol { symbol: Symbol::Equal } = tokens.next().token_type { // `=`
+                let value = parse_value(tokens); // ...
+                if let TokSemicolon = tokens.next().token_type { // `;`
                     return ASTree::Let { variable: name, value };
                 }
                 parse_error("Expected semicolon", tokens);
             }
-            parse_error("Expected value to assign to variable", tokens);
+            parse_error("Expected `=`", tokens);
         }
-        parse_error("Expected `=`", tokens);
+        parse_error("Expected variable name", tokens);
     }
     parse_error("Expected `let`", tokens);
 }
