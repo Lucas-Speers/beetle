@@ -12,6 +12,7 @@ mod args;
 mod files;
 mod lex;
 mod ast;
+mod interpreter;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -49,7 +50,12 @@ fn main() -> Result<()> {
         file_index += 1;
     }
 
-    ast::ast_from_tokens(all_tokens);
+    let (paths, functions) = ast::ast_from_tokens(all_tokens);
+
+    println!("test");
+
+    let mut code_state = interpreter::CodeState::new();
+    code_state.run_function("main".to_string(), Vec::new(), &functions);
 
     Ok(())
 }

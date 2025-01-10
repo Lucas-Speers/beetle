@@ -5,4 +5,5 @@ import "example/lib.bt"
 func main(args: List<String>) {
 	let x = 5;
 	x = "World!";
+	print(x);
 }
