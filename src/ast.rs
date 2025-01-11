@@ -4,16 +4,7 @@ use clap::builder::Str;
 
 use crate::lex::{Token, Symbol, TokenType::{self, *}};
 
-macro_rules! is_of_var {
-    ($val:ident, $var:path) => {
-        match $val {
-            $var{..} => true,
-            _ => false
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionDecleration {
     pub name: String,
     pub args: Vec<(String, String)>,
@@ -26,7 +17,7 @@ pub struct Function {
     args: Vec<ASTValue>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ASTree {
     Let {
         variable: String,
@@ -42,7 +33,7 @@ pub enum ASTree {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ASTValue {
     Number {
         left: u64,
@@ -54,7 +45,8 @@ pub enum ASTValue {
         content: String,
     },
     Function {
-        func: Function,
+        name: String,
+        args: Vec<ASTValue>,
     },
     Variable {
         name: String,
@@ -269,10 +261,15 @@ fn parse_function_call(tokens: &mut TokenIter) -> ASTree {
     println!("parse_function_call");
     if let TokIdentifier { name } = tokens.next() {
         if tokens.next() != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
-        let value = parse_value(tokens);
+        let mut values = Vec::new();
+        loop {
+            if tokens.peek_expect() == (TokSymbol { symbol: Symbol::RightParren }) {break;}
+            values.push(parse_value(tokens));
+            if tokens.peek_expect() == (TokSymbol { symbol: Symbol::Comma }) {tokens.next();}
+        }
         if tokens.next() != (TokSymbol { symbol: Symbol::RightParren }) {parse_error("Expected `)` at the end of function call", tokens)}
         if tokens.next() != TokSemicolon {parse_error("Expected semicolon", tokens)}
-        return ASTree::Function { name, args: vec![value] };
+        return ASTree::Function { name, args: values };
     }
     parse_error("expected function name", tokens);
     todo!()

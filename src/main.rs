@@ -54,8 +54,8 @@ fn main() -> Result<()> {
 
     println!("test");
 
-    let mut code_state = interpreter::CodeState::new();
-    code_state.run_function("main".to_string(), Vec::new(), &functions);
+    let mut code_state = interpreter::CodeState::new(functions);
+    code_state.run_function("main".to_string(), Vec::new());
 
     Ok(())
 }

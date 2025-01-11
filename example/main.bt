@@ -4,6 +4,11 @@ import "example/lib.bt"
 
 func main(args: List<String>) {
 	let x = 5;
-	x = "World!";
-	print(x);
+	x = 7;
+	print("Hello World!");
+	test_func();
+}
+
+func test_func() {
+	print("Howdy!");
 }
