@@ -55,7 +55,12 @@ fn main() -> Result<()> {
     println!("test");
 
     let mut code_state = interpreter::CodeState::new(functions);
-    code_state.run_function("main".to_string(), Vec::new());
+    let result = code_state.run_function("main".to_string(), Vec::new());
+    
+    match result {
+        Err(x) => println!("{x}"),
+        _ => {},
+    }
 
     Ok(())
 }

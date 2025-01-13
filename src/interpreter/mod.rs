@@ -1,6 +1,12 @@
 use std::{collections::HashMap, fmt::Display, process::exit};
 
+use interpreter_error::{InterpError, InterpResult};
+
 use crate::ast::{self, ASTValue, ASTree, FunctionDecleration};
+
+mod interpreter_error;
+
+type FuncReturnValue = Option<Variable>;
 
 #[derive(Debug, Clone)]
 pub enum Variable {
@@ -32,69 +38,73 @@ impl CodeState {
         global_var_scope.insert(String::from("test"), Variable::Int(5));
         return CodeState { functions, global_var_scope };
     }
-    fn variable_from_ast(&self, value: &ASTValue, local_scope: &VariableScope) -> Variable {
+    fn variable_from_ast(&self, value: &ASTValue, local_scope: &VariableScope) -> InterpResult<Variable> {
         return match value {
             ASTValue::Number { left, right, decimal, negative } => {
                 match decimal {
-                    false => Variable::Int(*left as i64),
+                    false => Ok(Variable::Int(*left as i64)),
                     true => todo!(),
                 }
             },
-            ASTValue::String { content } => Variable::String(content.to_string()),
+            ASTValue::String { content } => Ok(Variable::String(content.to_string())),
             ASTValue::Function { name, args } => todo!(),
             ASTValue::Variable { name } => {
                 if local_scope.contains_key(name) {
-                    local_scope.get(name).unwrap().clone()
+                    Ok(local_scope.get(name).unwrap().clone())
                 } else if self.global_var_scope.contains_key(name) {
-                    self.global_var_scope.get(name).unwrap().clone()
+                    Ok(self.global_var_scope.get(name).unwrap().clone())
                 } else {
-                    interpreter_error("Variable not found");
+                    Err(InterpError::VarNotFound(name.to_string()))
                 }
             },
         };
     }
-    fn variable_from_asts(&self, values: &[ASTValue], local_scope: &VariableScope) -> Vec<Variable> {
+    fn variable_from_asts(&self, values: &[ASTValue], local_scope: &VariableScope) -> InterpResult<Vec<Variable>> {
         values.iter().map(|v| self.variable_from_ast(v, local_scope)).collect()
     }
-    fn get_function(&self, name: String) -> FunctionDecleration {
+    fn get_function(&self, name: String) -> InterpResult<FunctionDecleration> {
         let valid_functions: Vec<&FunctionDecleration> = self.functions.iter().filter(|f| f.name == name).collect();
         if valid_functions.len() == 0 {
-            interpreter_error("Function name not found");
+            return Err(InterpError::FuncNotFound(name));
         }
-        return valid_functions[0].clone();
+        return Ok(valid_functions[0].clone());
     }
-    pub fn built_in_funtion(&mut self, function_name: &str, args: Vec<Variable>) -> bool {
-        match function_name {
+    pub fn built_in_funtion(&mut self, function_name: &str, args: Vec<Variable>) -> Option<FuncReturnValue> {
+        Some(match function_name {
             "print" => {
                 for arg in args {
                     print!("{arg}");
                 }
                 println!();
+                None
             }
-            _ => return false,
-        }
-        return true;
+            "input" => {
+                Some(Variable::String("mario".to_string()))
+            }
+            _ => return None,
+        })
     }
-    pub fn run_function(&mut self, function_name: String, args: Vec<Variable>) {
-        if self.built_in_funtion(&function_name, args) {return;}
-        let function = self.get_function(function_name);
+    pub fn run_function(&mut self, function_name: String, args: Vec<Variable>) -> InterpResult<FuncReturnValue> {
+        if let Some(value) = self.built_in_funtion(&function_name, args) {return Ok(value);}
+        let function = self.get_function(function_name)?;
         let mut function_scope = VariableScope::new();
         for ast in &function.body {
             println!("Running: {ast:?}");
             match ast {
                 ASTree::Let { variable, value } => {
-                    function_scope.insert(variable.to_string(), self.variable_from_ast(&value, &function_scope));
+                    function_scope.insert(variable.to_string(), self.variable_from_ast(&value, &function_scope)?);
                 },
                 ASTree::Assign { variable, value } => {
-                    let value = self.variable_from_ast(&value, &function_scope);
+                    let value = self.variable_from_ast(&value, &function_scope)?;
                     match function_scope.get_mut(&variable.to_string()) {
                         Some(x) => *x = value,
-                        None => interpreter_error("Variable not found"),
+                        None => return Err(InterpError::VarNotFound(variable.to_string())),
                     }
                 },
-                ASTree::Function { name, args } => self.run_function(name.to_string(), self.variable_from_asts(&args[..], &function_scope)),
+                ASTree::Function { name, args } => _ = self.run_function(name.to_string(), self.variable_from_asts(&args[..], &function_scope)?)?,
             }
         }
+        Ok(None)
     }
 }
 
