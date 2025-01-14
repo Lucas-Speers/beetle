@@ -54,9 +54,7 @@ fn main() -> Result<()> {
         println!("{t:?}");
     }
 
-    let (paths, functions) = ast::ast_from_tokens(all_tokens);
-
-    println!("test");
+    let (paths, functions) = ast::ASTParser::new(all_tokens).parse_all();
 
     let mut code_state = interpreter::CodeState::new(functions);
     let result = code_state.run_function("main".to_string(), &Vec::new());

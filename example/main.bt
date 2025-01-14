@@ -3,11 +3,11 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main() {
-	let x = 5;
-	print("Hello World!");
-	test_func(x);
+	print("What is your name?");
+	let name = input();
+	test_func(name);
 }
 
 func test_func(x) {
-	print("Howdy! The number is ", x);
+	print("Howdy, ", x, "! It's nice to meet you!");
 }
