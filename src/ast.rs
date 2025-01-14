@@ -1,13 +1,11 @@
 use std::{iter::Peekable, path::PathBuf};
 
-use clap::builder::Str;
-
-use crate::lex::{Token, Symbol, TokenType::{self, *}};
+use crate::lex::{Token, TokenType::{self, *}};
 
 #[derive(Debug, Clone)]
 pub struct FunctionDecleration {
     pub name: String,
-    pub args: Vec<(String, String)>,
+    pub args: Vec<String>,
     pub body: Vec<ASTree>,
 }
 
@@ -36,9 +34,8 @@ pub enum ASTree {
 #[derive(Debug, Clone)]
 pub enum ASTValue {
     Number {
-        left: u64,
-        right: u64,
-        decimal: bool,
+        whole: u64,
+        decimal: Option<u64>,
         negative: bool,
     },
     String {
@@ -103,7 +100,6 @@ impl TokenIter {
 }
 
 pub fn ast_from_tokens(tokens_vec: Vec<Token>) -> (Vec<PathBuf>, Vec<FunctionDecleration>) {
-    println!("{:?}", tokens_vec);
     let mut tokens = TokenIter::new(tokens_vec);
     parse_all(&mut tokens)
 }
@@ -120,10 +116,10 @@ fn parse_imports(tokens: &mut TokenIter) -> Vec<PathBuf> {
     let mut imported_files = Vec::new();
     loop { // check all the imports
         if let Some(token) = tokens.peek() {
-            if let TokIdentifier { name } = token {
+            if let Identifier(name) = token {
                 if name == "import" {
                     tokens.next();
-                    if let TokString { content } = tokens.next() {
+                    if let StringToken(content) = tokens.next() {
                         imported_files.push(PathBuf::from(content));
                         continue;
                     } else {unreachable!();}
@@ -139,7 +135,7 @@ fn parse_functions(tokens: &mut TokenIter) -> Vec<FunctionDecleration> {
     println!("parse_function");
     let mut functions = Vec::new();
     while tokens.has_more() {
-        if let TokIdentifier { name } = tokens.next() {
+        if let Identifier(name) = tokens.next() {
             if name != "func" {parse_error("Expected `func` keyword", tokens)}
             functions.push(parse_function_decleration(tokens));
         } else {
@@ -151,10 +147,10 @@ fn parse_functions(tokens: &mut TokenIter) -> Vec<FunctionDecleration> {
 
 fn parse_function_decleration(tokens: &mut TokenIter) -> FunctionDecleration {
     println!("parse_function_decleration");
-    if let TokIdentifier { name } = tokens.next() {
-        if tokens.next() != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
+    if let Identifier(name) = tokens.next() {
+        if tokens.next() != LeftParren {parse_error("Expected `(` after function name", tokens)}
         let args = parse_function_params(tokens);
-        if tokens.next() != (TokSymbol { symbol: Symbol::LeftCurly }) {parse_error("Expected `{` for the function code block", tokens)}
+        if tokens.next() != LeftCurly {parse_error("Expected `{` for the function code block", tokens)}
         let body = parse_fuction_body(tokens);
         return FunctionDecleration { name, args, body };
     }
@@ -163,34 +159,32 @@ fn parse_function_decleration(tokens: &mut TokenIter) -> FunctionDecleration {
     }
 }
 
-fn parse_function_params(tokens: &mut TokenIter) -> Vec<(String, String)> {
+fn parse_function_params(tokens: &mut TokenIter) -> Vec<String> {
     println!("parse_function_params");
     let mut params = Vec::new();
     loop {
-        if tokens.peek_expect() == (TokSymbol { symbol: Symbol::RightParren }) {
+        if tokens.peek_expect() == RightParren {
             tokens.next();
             return params;
         }
         params.push(parse_full_varriable(tokens));
-        if tokens.peek_expect() == (TokSymbol { symbol: Symbol::Comma }) {
+        if tokens.peek_expect() == Comma {
             tokens.next();
         }
     }
 }
 
-fn parse_full_varriable(tokens: &mut TokenIter) -> (String, String) {
+fn parse_full_varriable(tokens: &mut TokenIter) -> String {
     println!("parse_full_variable");
-    if let TokIdentifier { name } = tokens.next() {
-        if let TokSymbol { symbol: Symbol::Colon } = tokens.next() {
-            return (name, parse_type(tokens));
-        }
+    if let Identifier(name) = tokens.next() {
+        return name;
     }
     parse_error("Expected variable name", tokens);
 }
 
 fn parse_type(tokens: &mut TokenIter) -> String {
     println!("parse_type");
-    if let TokIdentifier { name } = tokens.next() {
+    if let Identifier(name) = tokens.next() {
         return name;
     }
     parse_error("Expected type", tokens);
@@ -202,18 +196,18 @@ fn parse_fuction_body(tokens: &mut TokenIter) -> Vec<ASTree> {
 
     loop {
         println!("loop, {:?}", tokens.peek_expect());
-        if let TokSymbol { symbol: Symbol::RightCurly } = tokens.peek_expect() {
+        if  tokens.peek_expect() == RightCurly {
             tokens.next();
             return expresions;
         }
-        if let TokIdentifier { name } = tokens.peek_expect() {
+        if let Identifier(name) = tokens.peek_expect() {
             if name == "let" {
                 expresions.push(parse_let(tokens));
             }
             else { // variable/function names
-                if let TokSymbol { symbol: Symbol::Equal } = tokens.peek_ahead_expect().token_type {
+                if tokens.peek_ahead_expect().token_type == Equal {
                     expresions.push(parse_assignment(tokens));
-                } else if let TokSymbol { symbol: Symbol::LeftParren } = tokens.peek_ahead_expect().token_type {
+                } else if tokens.peek_ahead_expect().token_type == LeftParren {
                     expresions.push(parse_function_call(tokens));
                 }
                 else {
@@ -226,10 +220,10 @@ fn parse_fuction_body(tokens: &mut TokenIter) -> Vec<ASTree> {
 
 fn parse_assignment(tokens: &mut TokenIter) -> ASTree {
     println!("parse_assignment");
-    if let TokIdentifier { name } = tokens.next() { // `var_name`
-        if let TokSymbol { symbol: Symbol::Equal } = tokens.next() { // `=`
+    if let Identifier(name) = tokens.next() { // `var_name`
+        if tokens.next() == Equal { // `=`
             let value = parse_value(tokens); // ...
-            if let TokSemicolon = tokens.next() { // `;`
+            if tokens.next() == Semicolon { // `;`
                 return ASTree::Assign { variable: name, value };
             }
             parse_error("Expected semicolon", tokens);
@@ -241,11 +235,11 @@ fn parse_assignment(tokens: &mut TokenIter) -> ASTree {
 
 fn parse_let(tokens: &mut TokenIter) -> ASTree {
     println!("parse_let");
-    if let TokIdentifier { name } = tokens.next() { // `let`
-        if let TokIdentifier { name } = tokens.next() { // `var_name`
-            if let TokSymbol { symbol: Symbol::Equal } = tokens.next() { // `=`
+    if let Identifier(name) = tokens.next() { // `let`
+        if let Identifier(name) = tokens.next() { // `var_name`
+            if tokens.next() == Equal { // `=`
                 let value = parse_value(tokens); // ...
-                if let TokSemicolon = tokens.next() { // `;`
+                if tokens.next() == Semicolon { // `;`
                     return ASTree::Let { variable: name, value };
                 }
                 parse_error("Expected semicolon", tokens);
@@ -259,16 +253,16 @@ fn parse_let(tokens: &mut TokenIter) -> ASTree {
 
 fn parse_function_call(tokens: &mut TokenIter) -> ASTree {
     println!("parse_function_call");
-    if let TokIdentifier { name } = tokens.next() {
-        if tokens.next() != (TokSymbol { symbol: Symbol::LeftParren }) {parse_error("Expected `(` after function name", tokens)}
+    if let Identifier(name) = tokens.next() {
+        if tokens.next() != LeftParren {parse_error("Expected `(` after function name", tokens)}
         let mut values = Vec::new();
         loop {
-            if tokens.peek_expect() == (TokSymbol { symbol: Symbol::RightParren }) {break;}
+            if tokens.peek_expect() == RightParren {break;}
             values.push(parse_value(tokens));
-            if tokens.peek_expect() == (TokSymbol { symbol: Symbol::Comma }) {tokens.next();}
+            if tokens.peek_expect() == Comma {tokens.next();}
         }
-        if tokens.next() != (TokSymbol { symbol: Symbol::RightParren }) {parse_error("Expected `)` at the end of function call", tokens)}
-        if tokens.next() != TokSemicolon {parse_error("Expected semicolon", tokens)}
+        if tokens.next() != RightParren {parse_error("Expected `)` at the end of function call", tokens)}
+        if tokens.next() != Semicolon {parse_error("Expected semicolon", tokens)}
         return ASTree::Function { name, args: values };
     }
     parse_error("expected function name", tokens);
@@ -278,13 +272,13 @@ fn parse_function_call(tokens: &mut TokenIter) -> ASTree {
 fn parse_value(tokens: &mut TokenIter) -> ASTValue {
     println!("parse_value");
     let next_token = tokens.next();
-    if let TokNumber { has_decimal, whole, decimal } = next_token {
-        return ASTValue::Number { left: whole, right: decimal, decimal: has_decimal, negative: false };
+    if let Number { whole, decimal } = next_token {
+        return ASTValue::Number { whole, decimal, negative: false }; // TODO
     }
-    if let TokString { content } = next_token {
+    if let StringToken(content) = next_token {
         return ASTValue::String { content };
     }
-    if let TokIdentifier { name } = next_token {
+    if let Identifier(name) = next_token {
         return ASTValue::Variable { name };
     }
     dbg!(next_token);
@@ -293,10 +287,9 @@ fn parse_value(tokens: &mut TokenIter) -> ASTValue {
 
 fn parse_error(error: &str, tokens: &TokenIter) -> ! {
     println!(
-        "ERROR {error} at ({}, {}) in {}",
+        "ERROR {error} at ({}, {})",
         tokens.last.position.0,
         tokens.last.position.1,
-        tokens.last.filename,
     );
     std::process::exit(1);
 }

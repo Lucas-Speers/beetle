@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, process::exit};
+use std::{collections::HashMap, fmt::Display, process::{self, exit}};
 
 use interpreter_error::{InterpError, InterpResult};
 
@@ -40,10 +40,10 @@ impl CodeState {
     }
     fn variable_from_ast(&self, value: &ASTValue, local_scope: &VariableScope) -> InterpResult<Variable> {
         return match value {
-            ASTValue::Number { left, right, decimal, negative } => {
+            ASTValue::Number { whole, decimal, negative  } => {
                 match decimal {
-                    false => Ok(Variable::Int(*left as i64)),
-                    true => todo!(),
+                    Some(x) => todo!(),
+                    None => Ok(Variable::Int( if *negative {-(*whole as i64)} else {*whole as i64})),
                 }
             },
             ASTValue::String { content } => Ok(Variable::String(content.to_string())),
@@ -69,7 +69,7 @@ impl CodeState {
         }
         return Ok(valid_functions[0].clone());
     }
-    pub fn built_in_funtion(&mut self, function_name: &str, args: Vec<Variable>) -> Option<FuncReturnValue> {
+    pub fn built_in_funtion(&mut self, function_name: &str, args: &Vec<Variable>) -> Option<FuncReturnValue> {
         Some(match function_name {
             "print" => {
                 for arg in args {
@@ -81,13 +81,20 @@ impl CodeState {
             "input" => {
                 Some(Variable::String("mario".to_string()))
             }
+            "exit" => {
+                process::exit(0);
+            }
             _ => return None,
         })
     }
-    pub fn run_function(&mut self, function_name: String, args: Vec<Variable>) -> InterpResult<FuncReturnValue> {
+    pub fn run_function(&mut self, function_name: String, args: &Vec<Variable>) -> InterpResult<FuncReturnValue> {
         if let Some(value) = self.built_in_funtion(&function_name, args) {return Ok(value);}
         let function = self.get_function(function_name)?;
         let mut function_scope = VariableScope::new();
+        if function.args.len() != args.len() {return Err(InterpError::IncorectArgs);}
+        for arg in 0..args.len() {
+            function_scope.insert(function.args[arg].clone(), args[arg].clone());
+        }
         for ast in &function.body {
             println!("Running: {ast:?}");
             match ast {
@@ -101,7 +108,7 @@ impl CodeState {
                         None => return Err(InterpError::VarNotFound(variable.to_string())),
                     }
                 },
-                ASTree::Function { name, args } => _ = self.run_function(name.to_string(), self.variable_from_asts(&args[..], &function_scope)?)?,
+                ASTree::Function { name, args } => _ = self.run_function(name.to_string(), &self.variable_from_asts(&args[..], &function_scope)?)?,
             }
         }
         Ok(None)

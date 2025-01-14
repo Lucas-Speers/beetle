@@ -1,8 +1,0 @@
-
-
-struct MyStruct {
-    integer: i32, // 32 bit integer
-    boolean: bool,
-    pointer: Ptr<MyStruct>, // Ptrs can be NULL
-    array: List<u8>, // dynamically allocated
-}

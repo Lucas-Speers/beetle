@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use clap::Parser;
 use args::Cli;
 
-use anyhow::{anyhow, Context, Ok, Result};
-use lex::{tokenize, Token};
+use anyhow::{anyhow, Context, Result};
+use lex::{Tokenizer, Token};
 
 mod args;
 mod files;
@@ -31,7 +31,7 @@ fn main() -> Result<()> {
     let mut file_index = 0;
     while files_to_read.len() > file_index {
         let file = files::read_full_file(&files_to_read[file_index])?;
-        let mut tokens = tokenize(&file, files_to_read[file_index].to_str().context("Filename is not proper unicode")?);
+        let mut tokens = Tokenizer::new(&file, files_to_read[file_index].to_str().context("Filename is not proper unicode")?).generate();
 
         all_tokens.append(&mut tokens);
     
@@ -50,16 +50,20 @@ fn main() -> Result<()> {
         file_index += 1;
     }
 
+    for t in &all_tokens {
+        println!("{t:?}");
+    }
+
     let (paths, functions) = ast::ast_from_tokens(all_tokens);
 
     println!("test");
 
     let mut code_state = interpreter::CodeState::new(functions);
-    let result = code_state.run_function("main".to_string(), Vec::new());
+    let result = code_state.run_function("main".to_string(), &Vec::new());
     
     match result {
+        Ok(_) => (),
         Err(x) => println!("{x}"),
-        _ => {},
     }
 
     Ok(())

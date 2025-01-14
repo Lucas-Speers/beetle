@@ -2,13 +2,12 @@
 import "example/std.bt"
 import "example/lib.bt"
 
-func main(args: List<String>) {
+func main() {
 	let x = 5;
-	x = 7;
 	print("Hello World!");
-	test_func();
+	test_func(x);
 }
 
-func test_func() {
-	print("Howdy!");
+func test_func(x) {
+	print("Howdy! The number is ", x);
 }

@@ -5,6 +5,7 @@ pub type InterpResult<T> = std::result::Result<T, InterpError>;
 pub enum InterpError {
     VarNotFound(String),
     FuncNotFound(String),
+    IncorectArgs,
 }
 
 impl Display for InterpError {
@@ -12,6 +13,7 @@ impl Display for InterpError {
         match self {
             InterpError::VarNotFound(var) => write!(f, "Cannot find variable: {var}"),
             InterpError::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),
+            InterpError::IncorectArgs => write!(f, "Incorect arguments passed to function"),
         }
     }
 }
