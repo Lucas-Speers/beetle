@@ -100,11 +100,13 @@ impl ASTParser {
         println!("parse_functions");
         let mut functions = Vec::new();
         while self.has_more() {
-            if let Identifier(name) = self.next() {
-                if name != "func" {self.parse_error("Expected `func` keyword")}
-                functions.push(self.parse_function_decleration());
-            } else {
-                self.parse_error("Expected function decleration");
+            if let Identifier(name) = self.peek(0) {
+                if name == "func" {
+                    functions.push(self.parse_function_decleration());
+                }
+                else {
+                    self.parse_error("Unexpected token in file");
+                }
             }
         }
         functions
@@ -112,10 +114,9 @@ impl ASTParser {
     
     fn parse_function_decleration(&mut self) -> FunctionDecleration {
         println!("parse_function_decleration");
+        if self.next() != Identifier("func".to_owned()) {self.parse_error("Expected `func` keyword")}
         if let Identifier(name) = self.next() {
-            if self.next() != LeftParren {self.parse_error("Expected `(` after function name")}
             let args = self.parse_function_params();
-            if self.next() != LeftCurly {self.parse_error("Expected `{` for the function code block")}
             let body = self.parse_fuction_body();
             return FunctionDecleration { name, args, body };
         }
@@ -127,30 +128,25 @@ impl ASTParser {
     fn parse_function_params(&mut self) -> Vec<String> {
         println!("parse_function_params");
         let mut params = Vec::new();
+        if self.next() != LeftParren {self.parse_error("Expected `(`")}
         loop {
-            if self.peek(0) == RightParren {
-                self.next();
+            if self.peek(0) == RightParren {self.next();return params;}
+
+            if let Identifier(name) = self.next() {params.push(name);}
+            else {self.parse_error("Expected variable name");}
+            
+            if self.peek(0) == Comma {self.next();}
+            else {
+                if self.next() != RightParren {self.parse_error("Expected `)`")}
                 return params;
             }
-            params.push(self.parse_full_varriable());
-            if self.peek(0) == Comma {
-                self.next();
-            }
         }
-    }
-    
-    fn parse_full_varriable(&mut self) -> String {
-        println!("parse_full_variable");
-        if let Identifier(name) = self.next() {
-            return name;
-        }
-        self.parse_error("Expected variable name");
     }
     
     fn parse_fuction_body(&mut self) -> Vec<ASTree> {
         println!("parse_fuction_body");
         let mut expresions = Vec::new();
-    
+        if self.next() != LeftCurly {self.parse_error("Expected `{`")}
         loop {
             println!("loop, {:?}", self.peek(0));
             if  self.peek(0) == RightCurly {
@@ -178,35 +174,25 @@ impl ASTParser {
     
     fn parse_assignment(&mut self) -> ASTree {
         println!("parse_assignment");
-        if let Identifier(name) = self.next() { // `var_name`
-            if self.next() == Equal { // `=`
-                let value = self.parse_value(); // ...
-                if self.next() == Semicolon { // `;`
-                    return ASTree::Assign { variable: name, value };
-                }
-                self.parse_error("Expected semicolon");
-            }
-            self.parse_error("Expected `=`");
+        if let Identifier(variable) = self.next() {
+            if self.next() != Equal {self.parse_error("Expected `=`")}
+            let value = self.parse_value();
+            if self.next() != Semicolon {self.parse_error("Expected `;`")}
+            return ASTree::Assign { variable, value };
         }
-        self.parse_error("Expected variable name");
+        else {self.parse_error("Expected variable name")}
     }
     
     fn parse_let(&mut self) -> ASTree {
         println!("parse_let");
-        if let Identifier(name) = self.next() { // `let`
-            if let Identifier(name) = self.next() { // `var_name`
-                if self.next() == Equal { // `=`
-                    let value = self.parse_value(); // ...
-                    if self.next() == Semicolon { // `;`
-                        return ASTree::Let { variable: name, value };
-                    }
-                    self.parse_error("Expected semicolon");
-                }
-                self.parse_error("Expected `=`");
-            }
-            self.parse_error("Expected variable name");
+        if self.next() != Identifier("let".to_owned()) {self.parse_error("Expected `let`")}
+        if let Identifier(variable) = self.next() {
+            if self.next() != Equal {self.parse_error("Expected `=`")}
+            let value = self.parse_value();
+            if self.next() != Semicolon {self.parse_error("Expected `;`")}
+            return ASTree::Let { variable, value };
         }
-        self.parse_error("Expected `let`");
+        else {self.parse_error("Expected variable name")}
     }
     
     fn parse_function_call(&mut self) -> Function {
@@ -215,15 +201,13 @@ impl ASTParser {
             if self.next() != LeftParren {self.parse_error("Expected `(` after function name")}
             let mut values = Vec::new();
             loop {
-                if self.peek(0) == RightParren {break;}
+                if self.peek(0) == RightParren {self.next();break;}
                 values.push(self.parse_value());
                 if self.peek(0) == Comma {self.next();}
             }
-            if self.next() != RightParren {self.parse_error("Expected `)` at the end of function call")}
             return Function { name, args: values };
         }
         self.parse_error("expected function name");
-        todo!()
     }
     
     fn parse_value(&mut self) -> ASTValue {
