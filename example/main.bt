@@ -4,8 +4,15 @@ import "example/lib.bt"
 
 func main() {
 	print("What is your name?");
-	let name = input();
+	let name = "mario";
 	test_func(name);
+	if (false) {
+		print("hello");
+	} else if (false) {
+		print("hi");
+	} else {
+		print("aaa");
+	}
 }
 
 func test_func(x) {

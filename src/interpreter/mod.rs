@@ -9,6 +9,7 @@ mod interpreter_error;
 #[derive(Debug, Clone)]
 pub enum Variable {
     None,
+    Bool(bool),
     Int(i64),
     Float(f64),
     String(String),
@@ -18,9 +19,22 @@ impl Display for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Variable::None => "None".to_owned().fmt(f),
+            Variable::Bool(bool) => bool.fmt(f),
             Variable::Int(int) => int.fmt(f),
             Variable::Float(float) => float.fmt(f),
             Variable::String(string) => string.fmt(f),
+        }
+    }
+}
+
+impl Variable {
+    fn to_bool(&self) -> bool {
+        match self {
+            Variable::None => false,
+            Variable::Bool(bool) => *bool,
+            Variable::Int(int) => *int != 0,
+            Variable::Float(float) => *float != 0.0,
+            Variable::String(string) => !string.is_empty(),
         }
     }
 }
@@ -46,12 +60,13 @@ impl CodeState {
                     None => Ok(Variable::Int( if *negative {-(*whole as i64)} else {*whole as i64})),
                 }
             },
-            ASTValue::String { content } => Ok(Variable::String(content.to_string())),
+            ASTValue::Bool(bool) => Ok(Variable::Bool(*bool)),
+            ASTValue::String(content) => Ok(Variable::String(content.to_string())),
             ASTValue::Function(Function { name, args }) => {
                 let args = &self.variable_from_asts(&args[..], &local_scope)?;
                 self.run_function(name.to_string(), args)
             },
-            ASTValue::Variable { name } => {
+            ASTValue::Variable(name) => {
                 if local_scope.contains_key(name) {
                     Ok(local_scope.get(name).unwrap().clone())
                 } else if self.global_var_scope.contains_key(name) {
@@ -103,25 +118,49 @@ impl CodeState {
         for arg in 0..args.len() {
             function_scope.insert(function.args[arg].clone(), args[arg].clone());
         }
-        for ast in &function.body {
-            // println!("Running: {ast:?}");
+        
+        self.run_ast_tree(&function.body, &function_scope)
+    }
+    fn run_ast_tree(&mut self, body: &Vec<ASTree>, scope: &HashMap<String, Variable>) -> InterpResult<Variable> {
+        let mut current_scope = scope.clone();
+        let mut condition_failed = false;
+        for ast in body {
             match ast {
                 ASTree::Let { variable, value } => {
-                    function_scope.insert(variable.to_string(), self.variable_from_ast(&value, &function_scope)?);
+                    current_scope.insert(variable.to_string(), self.variable_from_ast(&value, &current_scope)?);
                 },
                 ASTree::Assign { variable, value } => {
-                    let value = self.variable_from_ast(&value, &function_scope)?;
-                    match function_scope.get_mut(&variable.to_string()) {
+                    let value = self.variable_from_ast(&value, &current_scope)?;
+                    match current_scope.get_mut(&variable.to_string()) {
                         Some(x) => *x = value,
                         None => return Err(InterpError::VarNotFound(variable.to_string())),
                     }
                 },
                 ASTree::Function(Function { name, args }) => _ = {
-                    let args = &self.variable_from_asts(&args[..], &function_scope)?;
+                    let args = &self.variable_from_asts(&args[..], &current_scope)?;
                     self.run_function(name.to_string(), args)?
+                },
+                ASTree::If { condition, body } => {
+                    if self.variable_from_ast(condition, &current_scope)?.to_bool() {
+                        condition_failed = false;
+                        self.run_ast_tree(body, &current_scope)?;
+                    } else {condition_failed = true}
+                },
+                ASTree::ElseIf { condition, body } => {
+                    if condition_failed && self.variable_from_ast(condition, &current_scope)?.to_bool() {
+                        condition_failed = false;
+                        self.run_ast_tree(body, &current_scope)?;
+                    }
+                },
+                ASTree::Else { body } => {
+                    if condition_failed {
+                        condition_failed = false;
+                        self.run_ast_tree(body, &current_scope)?;
+                    }
                 },
             }
         }
+
         Ok(Variable::None)
     }
 }
