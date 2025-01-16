@@ -3,18 +3,14 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main() {
-	print("What is your name?");
-	let name = "mario";
-	test_func(name);
-	if (false) {
-		print("hello");
-	} else if (false) {
-		print("hi");
-	} else {
-		print("aaa");
-	}
-}
+	print("What is the password?");
+	let x = input();
+	
+	print("You said: ", x);
 
-func test_func(x) {
-	print("Howdy, ", x, "! It's nice to meet you!");
+	if (x == "hello") {
+		print("Correct!");
+	} else {
+		print("Incorrect!");
+	}
 }

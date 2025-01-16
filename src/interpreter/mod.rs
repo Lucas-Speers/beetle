@@ -5,6 +5,30 @@ use interpreter_error::{InterpError, InterpResult};
 use crate::ast::{self, ASTValue, ASTree, Function, FunctionDecleration};
 
 mod interpreter_error;
+mod operations;
+
+#[derive(Debug, Clone)]
+pub enum VarType {
+    None,
+    Bool,
+    Int,
+    Float,
+    String,
+    Type,
+}
+
+impl Display for VarType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarType::None => write!(f, "None"),
+            VarType::Bool => write!(f, "Bool"),
+            VarType::Int => write!(f, "Int"),
+            VarType::Float => write!(f, "Float"),
+            VarType::String => write!(f, "String"),
+            VarType::Type => write!(f, "Type"),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Variable {
@@ -13,6 +37,7 @@ pub enum Variable {
     Int(i64),
     Float(f64),
     String(String),
+    Type(VarType),
 }
 
 impl Display for Variable {
@@ -23,6 +48,7 @@ impl Display for Variable {
             Variable::Int(int) => int.fmt(f),
             Variable::Float(float) => float.fmt(f),
             Variable::String(string) => string.fmt(f),
+            Variable::Type(var_type) => todo!(),
         }
     }
 }
@@ -35,6 +61,7 @@ impl Variable {
             Variable::Int(int) => *int != 0,
             Variable::Float(float) => *float != 0.0,
             Variable::String(string) => !string.is_empty(),
+            Variable::Type(var_type) => true,
         }
     }
 }
@@ -73,6 +100,14 @@ impl CodeState {
                     Ok(self.global_var_scope.get(name).unwrap().clone())
                 } else {
                     Err(InterpError::VarNotFound(name.to_string()))
+                }
+            },
+            ASTValue::Operation(var1, var2, op) => {
+                if let Some(v) = operations::variable_operation(&self.variable_from_ast(var1, local_scope)?,&self.variable_from_ast(var2, local_scope)?, *op) {
+                    Ok(v)
+                }
+                else {
+                    Err(InterpError::NoOperation)
                 }
             },
         };

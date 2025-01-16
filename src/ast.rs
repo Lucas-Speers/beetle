@@ -1,4 +1,4 @@
-use std::{iter::Peekable, path::PathBuf};
+use std::{iter::Peekable, path::PathBuf, process::exit};
 
 use crate::lex::{Token, TokenType::{self, *}};
 
@@ -39,6 +39,25 @@ pub enum ASTree {
     },
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum Op {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+    Equality,
+}
+
+impl Op {
+    fn precidence(&self) -> u8 {
+        match self {
+            Op::Addition | Op::Subtraction => 1,
+            Op::Multiplication | Op::Division => 2,
+            Op::Equality => 3,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTValue {
     Number {
@@ -50,6 +69,7 @@ pub enum ASTValue {
     Bool(bool),
     Function(Function),
     Variable(String),
+    Operation(Box<ASTValue>, Box<ASTValue>, Op),
 }
 
 pub struct ASTParser {
@@ -266,26 +286,90 @@ impl ASTParser {
     
     fn parse_value(&mut self) -> ASTValue {
         println!("parse_value");
-        let next_token = self.peek(0);
-        if let Number { whole, decimal } = next_token {
-            self.next();
-            return ASTValue::Number { whole, decimal, negative: false }; // TODO
+        fn expect_value(values: &Vec<ASTValue>, operations: &Vec<Op>) {
+            if values.len() == operations.len() {return;}
+            println!("error in parsing value");
+            exit(1);
         }
-        if let StringToken(content) = next_token {
-            self.next();
-            return ASTValue::String(content);
+        fn expect_operation(values: &Vec<ASTValue>, operations: &Vec<Op>) {
+            if values.len()-1 == operations.len() {return;}
+            println!("error in parsing operation");
+            exit(1);
         }
-        if let Identifier(name) = next_token {
-            if name == "true" {self.next();return ASTValue::Bool(true);}
-            if name == "false" {self.next();return ASTValue::Bool(false);}
-            if self.peek(1) == LeftParren {
-                return ASTValue::Function(self.parse_function_call());
+        let mut values = Vec::new();
+        let mut operations = Vec::new();
+        loop {
+            match self.peek(0) {
+                Identifier(name) => {
+                    expect_value(&values, &operations);
+                    if name == "true" {self.next();values.push(ASTValue::Bool(true));}
+                    if name == "false" {self.next();values.push(ASTValue::Bool(false));}
+                    if self.peek(1) == LeftParren {
+                        values.push(ASTValue::Function(self.parse_function_call()));
+                    }
+                    else {
+                        self.next();
+                        values.push(ASTValue::Variable(name));
+                    }
+                },
+                Number { whole, decimal } => {
+                    expect_value(&values, &operations);
+                    self.next();
+                    values.push(ASTValue::Number { whole, decimal, negative: false });
+                },
+                StringToken(content) => {
+                    expect_value(&values, &operations);
+                    self.next();
+                    values.push(ASTValue::String(content));
+                },
+                Addition => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Addition);
+                },
+                Subtraction => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Subtraction);
+                },
+                Multiplication => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Multiplication);
+                },
+                Division => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Division);
+                },
+                LeftParren => todo!(),
+                LeftCurly => todo!(),
+                RightCurly => todo!(),
+                Colon => todo!(),
+                Equal => todo!(),
+                DoubleEqual => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Equality);
+                },
+                _ => break,
             }
-            self.next();
-            return ASTValue::Variable(name);
         }
-        dbg!(next_token);
-        todo!();
+        
+        'outer: loop {
+            if operations.len() == 0 {return values[0].clone();}
+            let max = operations.iter().map(|op| op.precidence()).max().unwrap();
+            for i in 0..operations.len() {
+                if operations[i].precidence() == max {
+                    let new_value = ASTValue::Operation(Box::new(values[i].clone()), Box::new(values[i+1].clone()), operations[i].clone());
+                    values[i] = new_value;
+                    values.remove(i+1);
+                    operations.remove(i);
+                    continue 'outer;
+                }
+            }
+        }
+        todo!()
     }
     
     fn parse_error(&mut self, error: &str) -> ! {

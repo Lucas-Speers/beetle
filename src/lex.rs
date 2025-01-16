@@ -21,6 +21,7 @@ pub enum TokenType {
 
     Addition,
     Subtraction,
+    Multiplication,
     Division,
     LeftParren,
     RightParren,
@@ -91,6 +92,7 @@ impl Tokenizer {
                 if current_char == '=' && self.input[self.index+1] == '=' {
                     self.add_token(TokenType::DoubleEqual);
                     self.get_next();
+                    self.get_next();
                     continue;
                 }
             }
@@ -133,6 +135,7 @@ impl Tokenizer {
                 ';' => self.add_token(TokenType::Semicolon),
                 '+' => self.add_token(TokenType::Addition),
                 '-' => self.add_token(TokenType::Subtraction),
+                '*' => self.add_token(TokenType::Multiplication),
                 '/' => self.add_token(TokenType::Division),
                 '(' => self.add_token(TokenType::LeftParren),
                 ')' => self.add_token(TokenType::RightParren),
@@ -148,7 +151,7 @@ impl Tokenizer {
                         let next_char = self.input[self.index];
                         
                         if next_char.is_whitespace() {break;}
-                        if vec![';','+','-','/','(',')','{','}',':',',','='].contains(&next_char) {break;}
+                        if vec![';','+','-','*','/','(',')','{','}',':',',','='].contains(&next_char) {break;}
                         
                         self.get_next();
                         name.push(next_char);

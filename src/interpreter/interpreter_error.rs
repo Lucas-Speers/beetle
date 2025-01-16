@@ -6,6 +6,7 @@ pub enum InterpError {
     VarNotFound(String),
     FuncNotFound(String),
     IncorectArgs,
+    NoOperation,
 }
 
 impl Display for InterpError {
@@ -14,6 +15,7 @@ impl Display for InterpError {
             InterpError::VarNotFound(var) => write!(f, "Cannot find variable: {var}"),
             InterpError::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),
             InterpError::IncorectArgs => write!(f, "Incorect arguments passed to function"),
+            InterpError::NoOperation => write!(f, "No operation found"),
         }
     }
 }
