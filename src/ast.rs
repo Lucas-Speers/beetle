@@ -44,6 +44,7 @@ pub enum ASTree {
     Loop {
         body: Vec<ASTree>,
     },
+    For(String, ASTValue, Vec<ASTree>),
     Return(ASTValue),
 }
 
@@ -206,6 +207,7 @@ impl ASTParser {
                 "return" => return self.parse_return(),
                 "while" => return self.parse_while(),
                 "loop" => return self.parse_loop(),
+                "for" => return self.parse_for(),
                 "if" => {
                     println!("===={:?}", self.peek(1));
                     
@@ -304,6 +306,16 @@ impl ASTParser {
         let body = self.parse_fuction_body();
 
         return ASTree::Loop { body };
+    }
+
+    fn parse_for(&mut self) -> ASTree {
+        println!("parse_for");
+        if self.next() != Identifier("for".to_owned()) {self.parse_error("Expected `for`")}
+        if let Identifier(x) = self.next() {
+            if self.next() != Identifier("in".to_owned()) {self.parse_error("Expected `in`")}
+            let body = self.parse_fuction_body();
+            return ASTree::For(x, self.parse_value(), body);
+        } else {self.parse_error("Expected variable name after `for`")}
     }
 
     fn parse_return(&mut self) -> ASTree {
