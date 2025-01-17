@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Display}, process::{self, exit}};
+use std::{collections::HashMap, fmt::{Debug, Display}, process::{self, exit}};
 
 use interpreter_error::{InterpError, InterpResult};
 
@@ -13,8 +13,10 @@ pub enum VarType {
     Bool,
     Int,
     Float,
+    Char,
     String,
     Type,
+    List,
 }
 
 impl Display for VarType {
@@ -24,8 +26,10 @@ impl Display for VarType {
             VarType::Bool => write!(f, "Bool"),
             VarType::Int => write!(f, "Int"),
             VarType::Float => write!(f, "Float"),
+            VarType::Char => write!(f, "Char"),
             VarType::String => write!(f, "String"),
             VarType::Type => write!(f, "Type"),
+            VarType::List => write!(f, "List"),
         }
     }
 }
@@ -36,19 +40,23 @@ pub enum Variable {
     Bool(bool),
     Int(i64),
     Float(f64),
+    Char(char),
     String(String),
     Type(VarType),
+    List(Vec<Variable>),
 }
 
 impl Display for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Variable::None => "None".to_owned().fmt(f),
-            Variable::Bool(bool) => bool.fmt(f),
-            Variable::Int(int) => int.fmt(f),
-            Variable::Float(float) => float.fmt(f),
-            Variable::String(string) => string.fmt(f),
-            Variable::Type(var_type) => todo!(),
+            Variable::None => Display::fmt("None", f),
+            Variable::Bool(bool) => Display::fmt(bool, f),
+            Variable::Int(int) => Display::fmt(int, f),
+            Variable::Float(float) => Display::fmt(float, f),
+            Variable::Char(char) => Display::fmt(char, f),
+            Variable::String(string) => Display::fmt(string, f),
+            Variable::Type(var_type) => Display::fmt(var_type, f),
+            Variable::List(vec) => vec.iter().map(|v| Display::fmt(v, f).and(write!(f, " "))).collect(),
         }
     }
 }
@@ -60,8 +68,22 @@ impl Variable {
             Variable::Bool(bool) => *bool,
             Variable::Int(int) => *int != 0,
             Variable::Float(float) => *float != 0.0,
+            Variable::Char(char) => *char as u32 != 0,
             Variable::String(string) => !string.is_empty(),
             Variable::Type(var_type) => true,
+            Variable::List(vec) => !vec.is_empty(),
+        }
+    }
+    fn to_type(&self) -> VarType {
+        match self {
+            Variable::None => VarType::None,
+            Variable::Bool(_) => VarType::Bool,
+            Variable::Int(_) => VarType::Int,
+            Variable::Float(_) => VarType::Float,
+            Variable::Char(_) => VarType::Char,
+            Variable::String(_) => VarType::String,
+            Variable::Type(_) => VarType::Type,
+            Variable::List(_) => VarType::List,
         }
     }
 }
@@ -103,13 +125,16 @@ impl CodeState {
                 }
             },
             ASTValue::Operation(var1, var2, op) => {
-                if let Some(v) = operations::variable_operation(&self.variable_from_ast(var1, local_scope)?,&self.variable_from_ast(var2, local_scope)?, *op) {
+                let x = &self.variable_from_ast(var1, local_scope)?;
+                let y = &self.variable_from_ast(var2, local_scope)?;
+                if let Some(v) = operations::variable_operation(x, y, *op) {
                     Ok(v)
                 }
                 else {
-                    Err(InterpError::NoOperation)
+                    Err(InterpError::NoOperation(x.to_type(), y.to_type(), *op))
                 }
             },
+            ASTValue::List(vec) => Ok(Variable::List(self.variable_from_asts(&vec, local_scope)?)),
         };
     }
     fn variable_from_asts(&mut self, values: &[ASTValue], local_scope: &VariableScope) -> InterpResult<Vec<Variable>> {

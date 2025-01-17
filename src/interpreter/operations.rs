@@ -9,6 +9,7 @@ pub fn variable_operation(var1: &Variable, var2: &Variable, op: Op) -> Option<Va
 }
 
 fn variable_operation_tracked(var1: &Variable, var2: &Variable, op: Op, first: bool) -> Option<Variable> {
+    if op == Op::Indexing {return indexing(var1, var2);}
     match (var1, var2) {
         // anything with a `None` does not change
         (Variable::None, x) => Some(x.clone()),
@@ -36,6 +37,14 @@ fn variable_operation_tracked(var1: &Variable, var2: &Variable, op: Op, first: b
     }
 }
 
+fn indexing(var1: &Variable, var2: &Variable) -> Option<Variable> {
+    Some(match (var1, var2) {
+        (Variable::List(x), Variable::Int(i)) => x[*i as usize].clone(),
+        (Variable::String(x), Variable::Int(i)) => Variable::Char(x.chars().nth(*i as usize).unwrap()),
+        _ => return None,
+    })
+}
+
 fn int_operation(x: &i64, y: &i64, op: Op) -> Option<Variable> {
     Some(match op {
         Op::Addition => Variable::Int(x+y),
@@ -43,6 +52,7 @@ fn int_operation(x: &i64, y: &i64, op: Op) -> Option<Variable> {
         Op::Multiplication => Variable::Int(x*y),
         Op::Division => Variable::Int(x/y), // TODO: y is zero
         Op::Equality => Variable::Bool(x==y),
+        Op::Indexing => return None,
     })
 }
 
@@ -53,6 +63,7 @@ fn float_operation(x: &f64, y: &f64, op: Op) -> Option<Variable> {
         Op::Multiplication => Variable::Float(x*y),
         Op::Division => Variable::Float(x/y),
         Op::Equality => Variable::Bool(x==y),
+        Op::Indexing => return None,
     })
 }
 

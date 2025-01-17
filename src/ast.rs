@@ -47,18 +47,20 @@ pub enum ASTree {
     Return(ASTValue),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Op {
     Addition,
     Subtraction,
     Multiplication,
     Division,
     Equality,
+    Indexing,
 }
 
 impl Op {
     fn precidence(&self) -> u8 {
         match self {
+            Op::Indexing => 0,
             Op::Addition | Op::Subtraction => 1,
             Op::Multiplication | Op::Division => 2,
             Op::Equality => 3,
@@ -78,6 +80,7 @@ pub enum ASTValue {
     Function(Function),
     Variable(String),
     Operation(Box<ASTValue>, Box<ASTValue>, Op),
+    List(Vec<ASTValue>),
 }
 
 pub struct ASTParser {
@@ -96,10 +99,12 @@ impl ASTParser {
         println!(" ->{:?}", t);
         t
     }
+    
     fn peek(&self, i: usize) -> TokenType {
         let t = self.tokens[self.index+i].token_type.clone();
         t
     }
+    
     fn has_more(&self) -> bool {
         self.index < self.tokens.len()
     }
@@ -194,6 +199,7 @@ impl ASTParser {
     }
 
     fn parse_line(&mut self) -> ASTree {
+        println!("parse_line");
         if let Identifier(name) = self.peek(0) {
             match name.as_str() {
                 "let" => return self.parse_let(),
@@ -351,6 +357,14 @@ impl ASTParser {
                         self.next();
                         values.push(ASTValue::Variable(name));
                     }
+
+                    // indexing
+                    while self.peek(0) == LeftBracket {
+                        self.next();
+                        let v = values.pop().unwrap();
+                        values.push(ASTValue::Operation(Box::new(v), Box::new(self.parse_value()), Op::Indexing));
+                        if self.next() != RightBracket {self.parse_error("Expected `]`")}
+                    }
                 },
                 Number { whole, decimal } => {
                     expect_value(&values, &operations);
@@ -384,6 +398,17 @@ impl ASTParser {
                 },
                 LeftParren => todo!(),
                 LeftCurly => todo!(),
+                LeftBracket => {
+                    expect_value(&values, &operations);
+                    self.next();
+                    let mut v = Vec::new();
+                    loop {
+                        if self.peek(0) == RightBracket {self.next();break;}
+                        v.push(self.parse_value());
+                        if self.peek(0) == Comma {self.next();}
+                    }
+                    values.push(ASTValue::List(v));
+                },
                 Colon => todo!(),
                 Equal => todo!(),
                 DoubleEqual => {
@@ -391,7 +416,7 @@ impl ASTParser {
                     self.next();
                     operations.push(Op::Equality);
                 },
-                _ => break,
+                Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }
         }
         

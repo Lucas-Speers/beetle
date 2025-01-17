@@ -27,6 +27,8 @@ pub enum TokenType {
     RightParren,
     LeftCurly,
     RightCurly,
+    LeftBracket,
+    RightBracket,
     Colon,
     Comma,
     Equal,
@@ -141,6 +143,8 @@ impl Tokenizer {
                 ')' => self.add_token(TokenType::RightParren),
                 '{' => self.add_token(TokenType::LeftCurly),
                 '}' => self.add_token(TokenType::RightCurly),
+                '[' => self.add_token(TokenType::LeftBracket),
+                ']' => self.add_token(TokenType::RightBracket),
                 ':' => self.add_token(TokenType::Colon),
                 ',' => self.add_token(TokenType::Comma),
                 '=' => self.add_token(TokenType::Equal),
@@ -151,7 +155,7 @@ impl Tokenizer {
                         let next_char = self.input[self.index];
                         
                         if next_char.is_whitespace() {break;}
-                        if vec![';','+','-','*','/','(',')','{','}',':',',','='].contains(&next_char) {break;}
+                        if vec![';','+','-','*','/','(',')','{','}','[',']',':',',','='].contains(&next_char) {break;}
                         
                         self.get_next();
                         name.push(next_char);
