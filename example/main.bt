@@ -3,6 +3,12 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main() {
+	loop {
+		print("Value: ", test());
+	}
+}
+
+func test() {
 	print("What is the password?");
 	let x = input();
 	
@@ -10,7 +16,8 @@ func main() {
 
 	if (x == "hello") {
 		print("Correct!");
-	} else {
-		print("Incorrect!");
+		return true;
 	}
+	print("Incorrect!");
+	return false;
 }

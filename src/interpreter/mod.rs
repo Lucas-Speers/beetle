@@ -154,9 +154,9 @@ impl CodeState {
             function_scope.insert(function.args[arg].clone(), args[arg].clone());
         }
         
-        self.run_ast_tree(&function.body, &function_scope)
+        self.run_ast_tree(&function.body, &function_scope, &mut false)
     }
-    fn run_ast_tree(&mut self, body: &Vec<ASTree>, scope: &HashMap<String, Variable>) -> InterpResult<Variable> {
+    fn run_ast_tree(&mut self, body: &Vec<ASTree>, scope: &HashMap<String, Variable>, ret: &mut bool) -> InterpResult<Variable> {
         let mut current_scope = scope.clone();
         let mut condition_failed = false;
         for ast in body {
@@ -178,20 +178,39 @@ impl CodeState {
                 ASTree::If { condition, body } => {
                     if self.variable_from_ast(condition, &current_scope)?.to_bool() {
                         condition_failed = false;
-                        self.run_ast_tree(body, &current_scope)?;
+                        let ret_value = self.run_ast_tree(body, &current_scope, ret)?;
+                        if *ret {return Ok(ret_value);}
                     } else {condition_failed = true}
                 },
                 ASTree::ElseIf { condition, body } => {
                     if condition_failed && self.variable_from_ast(condition, &current_scope)?.to_bool() {
                         condition_failed = false;
-                        self.run_ast_tree(body, &current_scope)?;
+                        let ret_value = self.run_ast_tree(body, &current_scope, ret)?;
+                        if *ret {return Ok(ret_value);}
                     }
                 },
                 ASTree::Else { body } => {
                     if condition_failed {
                         condition_failed = false;
-                        self.run_ast_tree(body, &current_scope)?;
+                        let ret_value = self.run_ast_tree(body, &current_scope, ret)?;
+                        if *ret {return Ok(ret_value);}
                     }
+                },
+                ASTree::While { condition, body } => {
+                    if self.variable_from_ast(condition, &current_scope)?.to_bool() {
+                        let ret_value = self.run_ast_tree(body, &current_scope, ret)?;
+                        if *ret {return Ok(ret_value);}
+                    }
+                },
+                ASTree::Loop { body } => {
+                    loop {
+                        let ret_value = self.run_ast_tree(body, &current_scope, ret)?;
+                        if *ret {return Ok(ret_value);}
+                    }
+                },
+                ASTree::Return(value) => {
+                    *ret = true;
+                    return self.variable_from_ast(value, &current_scope);
                 },
             }
         }
