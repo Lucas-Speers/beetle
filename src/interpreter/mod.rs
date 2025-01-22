@@ -237,6 +237,20 @@ impl CodeState {
                     *ret = true;
                     return self.variable_from_ast(value, &current_scope);
                 },
+                ASTree::For(var, list, body) => {
+                    let list = self.variable_from_ast(list, &current_scope)?;
+                    if let Variable::List(list) = list {
+                        let mut loop_scope = current_scope.clone();
+                        for i in list {
+                            loop_scope.insert(var.to_string(), i);
+                            let ret_value = self.run_ast_tree(body, &loop_scope, ret)?;
+                            if *ret {return Ok(ret_value);}
+                        }
+                    }
+                    else {
+                        return Err(InterpError::NotAList(list.to_type()));
+                    }
+                },
             }
         }
 

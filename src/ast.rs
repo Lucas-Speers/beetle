@@ -103,6 +103,7 @@ impl ASTParser {
     
     fn peek(&self, i: usize) -> TokenType {
         let t = self.tokens[self.index+i].token_type.clone();
+        println!("                                  peeked: {:?}", t);
         t
     }
     
@@ -313,8 +314,9 @@ impl ASTParser {
         if self.next() != Identifier("for".to_owned()) {self.parse_error("Expected `for`")}
         if let Identifier(x) = self.next() {
             if self.next() != Identifier("in".to_owned()) {self.parse_error("Expected `in`")}
+            let list = self.parse_value();
             let body = self.parse_fuction_body();
-            return ASTree::For(x, self.parse_value(), body);
+            return ASTree::For(x, list, body);
         } else {self.parse_error("Expected variable name after `for`")}
     }
 
@@ -409,7 +411,6 @@ impl ASTParser {
                     operations.push(Op::Division);
                 },
                 LeftParren => todo!(),
-                LeftCurly => todo!(),
                 LeftBracket => {
                     expect_value(&values, &operations);
                     self.next();
@@ -428,7 +429,7 @@ impl ASTParser {
                     self.next();
                     operations.push(Op::Equality);
                 },
-                Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
+                LeftCurly | Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }
         }
         
