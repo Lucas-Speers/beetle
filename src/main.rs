@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use std::path::PathBuf;
+use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
 use clap::Parser;
 use args::Cli;
@@ -63,6 +63,12 @@ fn main() -> Result<()> {
         Ok(_) => (),
         Err(x) => println!("{x}"),
     }
+
+    let mut x = Rc::new(RefCell::new(5));
+    let mut y = Rc::clone(&x);
+    *y.borrow_mut() = 8;
+
+    println!("{x:?}, {y:?}");
 
     Ok(())
 }

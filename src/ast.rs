@@ -46,6 +46,8 @@ pub enum ASTree {
     },
     For(String, ASTValue, Vec<ASTree>),
     Return(ASTValue),
+    Break,
+    Continue,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -209,6 +211,8 @@ impl ASTParser {
                 "while" => return self.parse_while(),
                 "loop" => return self.parse_loop(),
                 "for" => return self.parse_for(),
+                "break" => return self.parse_break(),
+                "continue" => return self.parse_continue(),
                 "if" => {
                     println!("===={:?}", self.peek(1));
                     
@@ -327,6 +331,22 @@ impl ASTParser {
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
         return ASTree::Return(value);
+    }
+
+    fn parse_break(&mut self) -> ASTree {
+        println!("parse_break");
+        if self.next() != Identifier("break".to_owned()) {self.parse_error("Expected `break`")}
+        if self.next() != Semicolon {self.parse_error("Expected `;`")}
+
+        return ASTree::Break;
+    }
+
+    fn parse_continue(&mut self) -> ASTree {
+        println!("parse_continue");
+        if self.next() != Identifier("continue".to_owned()) {self.parse_error("Expected `continue`")}
+        if self.next() != Semicolon {self.parse_error("Expected `;`")}
+
+        return ASTree::Continue;
     }
     
     fn parse_function_call(&mut self) -> Function {
