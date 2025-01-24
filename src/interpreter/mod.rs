@@ -283,9 +283,9 @@ impl CodeState {
                     self.ret = true;
                     return self.variable_from_ast(value, &current_scope);
                 },
-                ASTree::For(var, list, body) => {
-                    let list = self.variable_from_ast(list, &current_scope)?;
-                    if let Variable::List(list) = list.borrow() {
+                ASTree::For(var, ast_list, body) => {
+                    let list_ref = self.variable_from_ast(ast_list, &current_scope)?;
+                    let x = if let Variable::List(list) = &*list_ref.borrow() {
                         let mut loop_scope = current_scope.clone();
                         for i in list {
                             loop_scope.insert(var.to_string(), Rc::clone(i));
@@ -295,8 +295,8 @@ impl CodeState {
                             if self.con {self.con = false;}
                         }
                     } else {
-                        return Err(InterpError::NotAList(list.borrow().to_type()));
-                    }
+                        return Err(InterpError::NotAList(list_ref.borrow().to_type()));
+                    };
                 },
                 ASTree::Break => {
                     self.brk = true;
