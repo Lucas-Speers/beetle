@@ -285,7 +285,7 @@ impl CodeState {
                 },
                 ASTree::For(var, ast_list, body) => {
                     let list_ref = self.variable_from_ast(ast_list, &current_scope)?;
-                    let x = if let Variable::List(list) = &*list_ref.borrow() {
+                    if let Variable::List(list) = &*list_ref.borrow() {
                         let mut loop_scope = current_scope.clone();
                         for i in list {
                             loop_scope.insert(var.to_string(), Rc::clone(i));
