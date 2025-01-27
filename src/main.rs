@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use clap::Parser;
 use args::Cli;
 
-use anyhow::{anyhow, Context, Result};
 use lex::{Tokenizer, Token};
 
 mod args;
@@ -14,7 +13,13 @@ mod lex;
 mod ast;
 mod interpreter;
 
-fn main() -> Result<()> {
+#[derive(Debug)]
+enum MainError {
+    UnicodeError,
+    FileNotFound,
+}
+
+fn main() -> Result<(), MainError> {
     let cli = Cli::parse();
 
     println!("{}", cli.file.display());
@@ -25,13 +30,13 @@ fn main() -> Result<()> {
     let mut files_to_read: Vec<PathBuf> = Vec::new();
     match cli.file.to_str() {
         Some(x) => files_to_read.push(PathBuf::from(x)),
-        None => return Err(anyhow!("Filename not propper unicode")),
+        None => return Err(MainError::UnicodeError),
     }
     
     let mut file_index = 0;
     while files_to_read.len() > file_index {
         let file = files::read_full_file(&files_to_read[file_index])?;
-        let mut tokens = Tokenizer::new(&file, files_to_read[file_index].to_str().context("Filename is not proper unicode")?).generate();
+        let mut tokens = Tokenizer::new(&file, files_to_read[file_index].to_str().unwrap()).generate();
 
         all_tokens.append(&mut tokens);
     
