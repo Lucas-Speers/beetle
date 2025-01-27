@@ -1,4 +1,3 @@
-use std::{char, iter::Peekable, process::exit, str::Chars};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -34,16 +33,6 @@ pub enum TokenType {
     Equal,
     DoubleEqual,
     // TODO: [] ! ? . < > <= >= etc
-}
-
-fn token_error(position: (u64, u64), filename: &str, error: &str) -> ! {
-    println!(
-        "ERROR: Parsing error at ({}, {}) in file '{}' {}",
-        position.0, position.1,
-        filename,
-        error,
-    );
-    exit(1)
 }
 
 pub struct Tokenizer {
@@ -148,7 +137,7 @@ impl Tokenizer {
                 ':' => self.add_token(TokenType::Colon),
                 ',' => self.add_token(TokenType::Comma),
                 '=' => self.add_token(TokenType::Equal),
-                c => {
+                _ => {
                     let mut name = String::new();
                     loop {
                         if self.input.len() == self.index+1 {break;}

@@ -1,14 +1,10 @@
-use std::{process::exit, rc::Rc};
+use std::rc::Rc;
 
 use crate::ast::Op;
 
 use super::{VarRef, VarType, Variable};
 
 pub fn variable_operation(var1: VarRef, var2: VarRef, op: Op) -> Option<VarRef> {
-    variable_operation_tracked(var1, var2, op, true)
-}
-
-fn variable_operation_tracked(var1: VarRef, var2: VarRef, op: Op, first: bool) -> Option<VarRef> {
     let types = (var1.borrow().to_type(), var2.borrow().to_type());
     if op == Op::Indexing {return indexing(types, var1, var2);}
     match types {

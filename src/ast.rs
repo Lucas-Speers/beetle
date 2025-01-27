@@ -1,4 +1,4 @@
-use std::{iter::Peekable, path::PathBuf, process::exit};
+use std::{path::PathBuf, process::exit};
 
 use crate::lex::{Token, TokenType::{self, *}};
 
@@ -466,7 +466,6 @@ impl ASTParser {
                 }
             }
         }
-        todo!()
     }
     
     fn parse_error(&mut self, error: &str) -> ! {

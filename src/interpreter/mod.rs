@@ -1,8 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, process::{self, exit}, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, process, rc::Rc};
 
 use interpreter_error::{InterpError, InterpResult};
 
-use crate::ast::{self, ASTValue, ASTree, Function, FunctionDecleration};
+use crate::ast::{ASTValue, ASTree, Function, FunctionDecleration};
 
 mod interpreter_error;
 mod operations;
@@ -70,7 +70,7 @@ impl Variable {
             Variable::Float(float) => *float != 0.0,
             Variable::Char(char) => *char as u32 != 0,
             Variable::String(string) => !string.is_empty(),
-            Variable::Type(var_type) => true,
+            Variable::Type(_) => true,
             Variable::List(vec) => !vec.is_empty(),
         }
     }
@@ -129,14 +129,14 @@ pub struct CodeState {
 
 impl CodeState {
     pub fn new(functions: Vec<FunctionDecleration>) -> Self {
-        let mut global_var_scope = VariableScope::new();
+        let global_var_scope = VariableScope::new();
         return CodeState { functions, global_var_scope, ret: false, brk: false, con: false };
     }
     fn variable_from_ast(&mut self, value: &ASTValue, local_scope: &VariableScope) -> InterpResult<VarRef> {
         return match value {
             ASTValue::Number { whole, decimal, negative  } => {
                 match decimal {
-                    Some(x) => todo!(),
+                    Some(_) => todo!(),
                     None => Ok(Variable::Int( if *negative {-(*whole as i64)} else {*whole as i64}).into()),
                 }
             },
@@ -180,6 +180,12 @@ impl CodeState {
     }
     pub fn built_in_funtion(&mut self, function_name: &str, args: &Vec<VarRef>) -> InterpResult<Option<VarRef>> {
         Ok(Some(match function_name {
+            "debug" => {
+                for arg in args {
+                    print!("{:p}: {}\n", arg.as_ref(), arg.borrow());
+                }
+                Variable::None.into()
+            }
             "print" => {
                 for arg in args {
                     print!("{}", arg.borrow());
@@ -231,7 +237,7 @@ impl CodeState {
                 ASTree::Assign { variable, value } => {
                     let value = self.variable_from_ast(&value, &current_scope)?;
                     match current_scope.get_mut(&variable.to_string()) {
-                        Some(x) => *x = value,
+                        Some(x) => *x.borrow_mut() = value.borrow().clone(),
                         None => return Err(InterpError::VarNotFound(variable.to_string())),
                     }
                 },
@@ -311,9 +317,4 @@ impl CodeState {
 
         Ok(Variable::None.into())
     }
-}
-
-fn interpreter_error(error: &str) -> ! {
-    println!("ERROR: {error}");
-    exit(1);
 }
