@@ -11,7 +11,7 @@ pub enum InterpError {
     FuncNotFound(String),
     IncorectArgs,
     NoOperation(VarType, VarType, Op),
-    NotAList(VarType),
+    IncorectType(VarType, VarType),
 }
 
 impl Display for InterpError {
@@ -21,7 +21,7 @@ impl Display for InterpError {
             InterpError::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),
             InterpError::IncorectArgs => write!(f, "Incorect arguments passed to function"),
             InterpError::NoOperation(x, y, op) => write!(f, "No operation found for {op:?} of {x} and {y}"),
-            InterpError::NotAList(t) => write!(f, "Cannot iterate over type of {t}"),
+            InterpError::IncorectType(t1, t2) => write!(f, "Expected type {t1}, got type {t2}"),
         }
     }
 }

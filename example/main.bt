@@ -3,14 +3,5 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main() {
-	let x = 10;
-	debug(x);
-	add(x);
-	debug(x);
-}
-
-func add(y) {
-	debug(y);
-	y = y + 1;
-	debug(y);
+	
 }

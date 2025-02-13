@@ -210,6 +210,48 @@ impl CodeState {
                 }
                 deep_copy(&args[0])
             }
+            "push" => {
+                if args.len() != 2 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    l.push(args[1].clone());
+                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+
+                Variable::None.into()
+            }
+            "pop" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    return Ok(l.pop());
+                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+            }
+            "insert" => {
+                if args.len() != 3 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    if let Variable::Int(i) = *args[1].borrow_mut() {
+                        l.insert(i as usize, args[2].clone());
+                    } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
+                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+
+                Variable::None.into()
+            }
+            "remove" => {
+                if args.len() != 2 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    if let Variable::Int(i) = *args[1].borrow_mut() {
+                        return Ok(Some(l.remove(i as usize)));
+                    } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
+                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+
+                Variable::None.into()
+            }
             _ => return Ok(None),
         }))
     }
@@ -301,7 +343,7 @@ impl CodeState {
                             if self.con {self.con = false;}
                         }
                     } else {
-                        return Err(InterpError::NotAList(list_ref.borrow().to_type()));
+                        return Err(InterpError::IncorectType(VarType::List, list_ref.borrow().to_type()));
                     };
                 },
                 ASTree::Break => {

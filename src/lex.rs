@@ -94,7 +94,14 @@ impl Tokenizer {
                 let mut s = String::new();
                 loop {
                     let next_char = self.get_next();
-                    if next_char == '\\' {} // todo
+                    if next_char == '\\' {
+                        match self.get_next() {
+                            '"' => s.push('"'),
+                            'n' => s.push('\n'),
+                            _ => todo!()
+                        }
+                        continue;;
+                    } // todo
                     if next_char == '"' {
                         break;
                     }
