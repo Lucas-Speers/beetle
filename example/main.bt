@@ -3,5 +3,71 @@ import "example/std.bt"
 import "example/lib.bt"
 
 func main() {
-	
+    let board = [
+        "_","_","_",
+        "_","_","_",
+        "_","_","_",];
+
+    let player = "X";
+
+    loop {
+        print("Player '", player, "' is up");
+        print("\n123\n456\n789\n");
+        print_board(board);
+
+        // get player input
+        let x = int(input("> ")) - 1;
+
+        // replace tile with player
+        remove(board, x);
+        insert(board, x, player);
+
+        // check for winners
+        if (winner("X", board)) {
+            print_board(board);
+            print("Player X wins!");
+            exit();
+        } else if (winner("O", board)) {
+            print_board(board);
+            print("Player O wins!");
+            exit();
+        }
+
+        // swap the player before next turn
+        swap_player(player);
+    }
+    
+}
+
+func print_board(board) {
+    print(board[0], board[1], board[2], "\n", board[3], board[4], board[5], "\n", board[6], board[7], board[8]);
+}
+
+func swap_player(player) {
+    if (player == "X") {
+        player = "O";
+    }
+    else {
+        player = "X";
+    }
+}
+
+func winner(player, board) {
+    for i in [0,3,6] {
+        if (board[i] == player & board[i+1] == player & board[i+2] == player) {
+            return true;
+        }
+    }
+    for i in [0,1,2] {
+        if (board[i] == player & board[i+3] == player & board[i+6] == player) {
+            return true;
+        }
+    }
+    if (board[0] == player & board[4] == player & board[8] == player) {
+        return true;
+    }
+    if (board[2] == player & board[4] == player & board[6] == player) {
+        return true;
+    }
+    return false;
 }

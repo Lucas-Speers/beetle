@@ -1,7 +1,7 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, process, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, process, rc::Rc};
 
 use interpreter_error::{InterpError, InterpResult};
-use variables::{VarRef, VarType, Variable};
+use variables::{deep_copy, VarRef, VarType, Variable};
 
 use crate::ast::{ASTValue, ASTree, Function, FunctionDecleration};
 
@@ -68,6 +68,7 @@ impl CodeState {
                 }
             },
             ASTValue::List(vec) => Ok(Variable::List(self.variable_from_asts(&vec, local_scope)?).into()),
+            ASTValue::None => Ok(Variable::None.into()),
         };
     }
     fn variable_from_asts(&mut self, values: &[ASTValue], local_scope: &VariableScope) -> InterpResult<Vec<VarRef>> {
@@ -96,6 +97,13 @@ impl CodeState {
                 Variable::None.into()
             }
             "input" => {
+                if args.len() >= 2 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if args.len() == 1 {
+                    print!("{}", args[0].borrow());
+                    io::stdout().flush();
+                }
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input).expect("failed to readline");
                 if input.chars().nth(input.len()-1) == Some('\n') {input.pop();}
@@ -117,7 +125,7 @@ impl CodeState {
                     return Err(InterpError::IncorectArgs);
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
-                    l.push(args[1].clone());
+                    l.push(deep_copy(&args[1]));
                 } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
 
                 Variable::None.into()
@@ -136,7 +144,7 @@ impl CodeState {
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
-                        l.insert(i as usize, args[2].clone());
+                        l.insert(i as usize, deep_copy(&args[2]));
                     } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
                 } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
 
@@ -152,6 +160,21 @@ impl CodeState {
                     } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
                 } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
 
+                Variable::None.into()
+            }
+            "type" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                Variable::Type(args[0].borrow().to_type()).into()
+            }
+            "int" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::String(s) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Int(s.parse().unwrap()).into()));
+                }
                 Variable::None.into()
             }
             _ => return Ok(None),

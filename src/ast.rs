@@ -58,15 +58,18 @@ pub enum Op {
     Division,
     Equality,
     Indexing,
+    And,
+    Or,
 }
 
 impl Op {
     fn precidence(&self) -> u8 {
         match self {
-            Op::Indexing => 0,
-            Op::Addition | Op::Subtraction => 1,
-            Op::Multiplication | Op::Division => 2,
-            Op::Equality => 3,
+            Op::And | Op::Or => 0,
+            Op::Equality => 1,
+            Op::Addition | Op::Subtraction => 2,
+            Op::Multiplication | Op::Division => 3,
+            Op::Indexing => 4,
         }
     }
 }
@@ -84,6 +87,7 @@ pub enum ASTValue {
     Variable(String),
     Operation(Box<ASTValue>, Box<ASTValue>, Op),
     List(Vec<ASTValue>),
+    None,
 }
 
 pub struct ASTParser {
@@ -99,13 +103,13 @@ impl ASTParser {
     fn next(&mut self) -> TokenType {
         let t = self.tokens[self.index].token_type.clone();
         self.index += 1;
-        println!(" ->{:?}", t);
+        // println!(" ->{:?}", t);
         t
     }
     
     fn peek(&self, i: usize) -> TokenType {
         let t = self.tokens[self.index+i].token_type.clone();
-        println!("                                  peeked: {:?}", t);
+        // println!("                                  peeked: {:?}", t);
         t
     }
     
@@ -114,14 +118,12 @@ impl ASTParser {
     }
     
     pub fn parse_all(&mut self) -> (Vec<PathBuf>, Vec<FunctionDecleration>) {
-        println!("parse_all");
         let imports = self.parse_imports();
         let functions = self.parse_functions();
-        dbg!(imports, functions)
+        (imports, functions)
     }
     
     fn parse_imports(&mut self) -> Vec<PathBuf> {
-        println!("parse_imports");
         let mut imported_files = Vec::new();
         loop { // check all the imports
             if self.has_more() {
@@ -142,7 +144,6 @@ impl ASTParser {
     }
     
     fn parse_functions(&mut self) -> Vec<FunctionDecleration> {
-        println!("parse_functions");
         let mut functions = Vec::new();
         while self.has_more() {
             if let Identifier(name) = self.peek(0) {
@@ -158,7 +159,6 @@ impl ASTParser {
     }
     
     fn parse_function_decleration(&mut self) -> FunctionDecleration {
-        println!("parse_function_decleration");
         if self.next() != Identifier("func".to_owned()) {self.parse_error("Expected `func` keyword")}
         if let Identifier(name) = self.next() {
             let args = self.parse_function_params();
@@ -171,7 +171,6 @@ impl ASTParser {
     }
     
     fn parse_function_params(&mut self) -> Vec<String> {
-        println!("parse_function_params");
         let mut params = Vec::new();
         if self.next() != LeftParren {self.parse_error("Expected `(`")}
         loop {
@@ -189,11 +188,9 @@ impl ASTParser {
     }
     
     fn parse_fuction_body(&mut self) -> Vec<ASTree> {
-        println!("parse_fuction_body");
         let mut expresions = Vec::new();
         if self.next() != LeftCurly {self.parse_error("Expected `{`")}
         loop {
-            println!("loop, {:?}", self.peek(0));
             if  self.peek(0) == RightCurly {
                 self.next();
                 return expresions;
@@ -203,7 +200,6 @@ impl ASTParser {
     }
 
     fn parse_line(&mut self) -> ASTree {
-        println!("parse_line");
         if let Identifier(name) = self.peek(0) {
             match name.as_str() {
                 "let" => return self.parse_let(),
@@ -214,8 +210,6 @@ impl ASTParser {
                 "break" => return self.parse_break(),
                 "continue" => return self.parse_continue(),
                 "if" => {
-                    println!("===={:?}", self.peek(1));
-                    
                     return self.parse_if()
                 },
                 "else" => {
@@ -241,7 +235,6 @@ impl ASTParser {
     }
     
     fn parse_assignment(&mut self) -> ASTree {
-        println!("parse_assignment");
         if let Identifier(variable) = self.next() {
             if self.next() != Equal {self.parse_error("Expected `=`")}
             let value = self.parse_value();
@@ -252,7 +245,6 @@ impl ASTParser {
     }
     
     fn parse_let(&mut self) -> ASTree {
-        println!("parse_let");
         if self.next() != Identifier("let".to_owned()) {self.parse_error("Expected `let`")}
         if let Identifier(variable) = self.next() {
             if self.next() != Equal {self.parse_error("Expected `=`")}
@@ -264,7 +256,6 @@ impl ASTParser {
     }
 
     fn parse_if(&mut self) -> ASTree {
-        println!("parse_if");
         if self.next() != Identifier("if".to_owned()) {self.parse_error("Expected `if`")}
         if self.next() != LeftParren {self.parse_error("Expected `(`")}
         let condition = self.parse_value();
@@ -275,7 +266,6 @@ impl ASTParser {
     }
    
     fn parse_else_if(&mut self) -> ASTree {
-        println!("parse_else_if");
         if self.next() != Identifier("else".to_owned()) {self.parse_error("Expected `else`")}
         if self.next() != Identifier("if".to_owned()) {self.parse_error("Expected `if`")}
         if self.next() != LeftParren {self.parse_error("Expected `(`")}
@@ -287,7 +277,6 @@ impl ASTParser {
     }
 
     fn parse_else(&mut self) -> ASTree {
-        println!("parse_else");
         if self.next() != Identifier("else".to_owned()) {self.parse_error("Expected `else`")}
         let body = self.parse_fuction_body();
 
@@ -295,7 +284,6 @@ impl ASTParser {
     }
     
     fn parse_while(&mut self) -> ASTree {
-        println!("parse_while");
         if self.next() != Identifier("while".to_owned()) {self.parse_error("Expected `while`")}
         if self.next() != LeftParren {self.parse_error("Expected `(`")}
         let condition = self.parse_value();
@@ -306,7 +294,6 @@ impl ASTParser {
     }
     
     fn parse_loop(&mut self) -> ASTree {
-        println!("parse_loop");
         if self.next() != Identifier("loop".to_owned()) {self.parse_error("Expected `loop`")}
         let body = self.parse_fuction_body();
 
@@ -314,7 +301,6 @@ impl ASTParser {
     }
 
     fn parse_for(&mut self) -> ASTree {
-        println!("parse_for");
         if self.next() != Identifier("for".to_owned()) {self.parse_error("Expected `for`")}
         if let Identifier(x) = self.next() {
             if self.next() != Identifier("in".to_owned()) {self.parse_error("Expected `in`")}
@@ -325,7 +311,6 @@ impl ASTParser {
     }
 
     fn parse_return(&mut self) -> ASTree {
-        println!("parse_return");
         if self.next() != Identifier("return".to_owned()) {self.parse_error("Expected `return`")}
         let value = self.parse_value();
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
@@ -334,7 +319,6 @@ impl ASTParser {
     }
 
     fn parse_break(&mut self) -> ASTree {
-        println!("parse_break");
         if self.next() != Identifier("break".to_owned()) {self.parse_error("Expected `break`")}
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
@@ -342,7 +326,6 @@ impl ASTParser {
     }
 
     fn parse_continue(&mut self) -> ASTree {
-        println!("parse_continue");
         if self.next() != Identifier("continue".to_owned()) {self.parse_error("Expected `continue`")}
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
@@ -350,7 +333,6 @@ impl ASTParser {
     }
     
     fn parse_function_call(&mut self) -> Function {
-        println!("parse_function_call");
         if let Identifier(name) = self.next() {
             if self.next() != LeftParren {self.parse_error("Expected `(` after function name")}
             let mut values = Vec::new();
@@ -365,7 +347,6 @@ impl ASTParser {
     }
     
     fn parse_value(&mut self) -> ASTValue {
-        println!("parse_value");
         fn expect_value(values: &Vec<ASTValue>, operations: &Vec<Op>) {
             if values.len() == operations.len() {return;}
             println!("error in parsing value");
@@ -384,6 +365,7 @@ impl ASTParser {
                     expect_value(&values, &operations);
                     if name == "true" {self.next();values.push(ASTValue::Bool(true));}
                     else if name == "false" {self.next();values.push(ASTValue::Bool(false));}
+                    else if name == "none" {self.next();values.push(ASTValue::None);}
                     else if self.peek(1) == LeftParren {
                         values.push(ASTValue::Function(self.parse_function_call()));
                     }
@@ -429,6 +411,16 @@ impl ASTParser {
                     expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Division);
+                },
+                And => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::And);
+                },
+                Or => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Or);
                 },
                 LeftParren => todo!(),
                 LeftBracket => {

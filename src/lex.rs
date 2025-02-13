@@ -22,6 +22,8 @@ pub enum TokenType {
     Subtraction,
     Multiplication,
     Division,
+    And,
+    Or,
     LeftParren,
     RightParren,
     LeftCurly,
@@ -32,7 +34,6 @@ pub enum TokenType {
     Comma,
     Equal,
     DoubleEqual,
-    // TODO: [] ! ? . < > <= >= etc
 }
 
 pub struct Tokenizer {
@@ -61,7 +62,7 @@ impl Tokenizer {
         loop {
             if self.input.len() == self.index {break;}
             let current_char = self.input[self.index];
-            println!("{current_char}");
+            // println!("{current_char}");
 
             // ignore whitespace
             if current_char.is_whitespace() {
@@ -135,6 +136,8 @@ impl Tokenizer {
                 '-' => self.add_token(TokenType::Subtraction),
                 '*' => self.add_token(TokenType::Multiplication),
                 '/' => self.add_token(TokenType::Division),
+                '&' => self.add_token(TokenType::And),
+                '|' => self.add_token(TokenType::Or),
                 '(' => self.add_token(TokenType::LeftParren),
                 ')' => self.add_token(TokenType::RightParren),
                 '{' => self.add_token(TokenType::LeftCurly),
@@ -151,7 +154,7 @@ impl Tokenizer {
                         let next_char = self.input[self.index];
                         
                         if next_char.is_whitespace() {break;}
-                        if vec![';','+','-','*','/','(',')','{','}','[',']',':',',','='].contains(&next_char) {break;}
+                        if vec![';','+','-','*','/','&','|','(',')','{','}','[',']',':',',','='].contains(&next_char) {break;}
                         
                         self.get_next();
                         name.push(next_char);

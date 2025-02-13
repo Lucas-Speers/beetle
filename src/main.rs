@@ -21,8 +21,6 @@ enum MainError {
 
 fn main() -> Result<(), MainError> {
     let cli = Cli::parse();
-
-    println!("{}", cli.file.display());
     
     let mut all_tokens: Vec<Token> = Vec::new();
     
@@ -53,10 +51,6 @@ fn main() -> Result<(), MainError> {
         // }
         
         file_index += 1;
-    }
-
-    for t in &all_tokens {
-        println!("{t:?}");
     }
 
     let (paths, functions) = ast::ASTParser::new(all_tokens).parse_all();
