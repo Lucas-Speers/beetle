@@ -391,6 +391,14 @@ impl ASTParser {
                     expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::String(content));
+
+                    // indexing
+                    while self.peek(0) == LeftBracket {
+                        self.next();
+                        let v = values.pop().unwrap();
+                        values.push(ASTValue::Operation(Box::new(v), Box::new(self.parse_value()), Op::Indexing));
+                        if self.next() != RightBracket {self.parse_error("Expected `]`")}
+                    }
                 },
                 Addition => {
                     expect_operation(&values, &operations);

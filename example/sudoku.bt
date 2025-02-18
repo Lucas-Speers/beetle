@@ -1,0 +1,44 @@
+func main() {
+    let board = [
+        "5___1___4",
+        "274___6__",
+        "_8_9_4___",
+        "81_46_3_2",
+        "__2_3_1__",
+        "7_6_91_58",
+        "___5_3_1_",
+        "__5___927",
+        "1___2___3",
+    ];
+
+    print("value: ", test_sudoku(board));
+}
+
+func contains(list, object) {
+    for i in list {
+        if (i == object) {
+            return true;
+        }
+    }
+    return false;
+}
+
+func test_sudoku(board) {
+    for y in range(len(board)) {
+        let x_list = [];
+        for x in range(len(board[y])) {
+            if (board[y][x] == "_"[0]) {continue;}
+            if (contains(x_list, board[y][x])) {return true;}
+            push(x_list, board[y][x]);
+        }
+    }
+    for y in range(len(board)) {
+        let y_list = [];
+        for x in range(len(board[y])) {
+            if (board[x][y] == "_"[0]) {continue;}
+            if (contains(y_list, board[x][y])) {return true;}
+            push(y_list, board[x][y]);
+        }
+    }
+    return false;
+}

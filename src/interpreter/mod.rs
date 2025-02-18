@@ -177,6 +177,33 @@ impl CodeState {
                 }
                 Variable::None.into()
             }
+            "len" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(l) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Int(l.len() as i64).into()))
+                }
+                if let Variable::String(l) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Int(l.len() as i64).into()))
+                }
+                todo!()
+            }
+            "range" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::Int(l) = &*args[0].borrow() {
+                    return Ok(Some(
+                        Variable::List(
+                            (0..*l)
+                            .into_iter()
+                            .map(|x| Variable::Int(x).into())
+                            .collect()
+                        ).into()))
+                }
+                todo!()
+            }
             _ => return Ok(None),
         }))
     }
@@ -199,9 +226,11 @@ impl CodeState {
         for ast in body {
             match ast {
                 ASTree::Let { variable, value } => {
+                    // println!("ASTree::Let");
                     current_scope.insert(variable.to_string(), self.variable_from_ast(&value, &current_scope)?);
                 },
                 ASTree::Assign { variable, value } => {
+                    // println!("ASTree::Assign");
                     let value = self.variable_from_ast(&value, &current_scope)?;
                     match current_scope.get_mut(&variable.to_string()) {
                         Some(x) => *x.borrow_mut() = value.borrow().clone(),
@@ -209,10 +238,16 @@ impl CodeState {
                     }
                 },
                 ASTree::Function(Function { name, args }) => _ = {
+                    // println!("ASTree::Function");
                     let args = &self.variable_from_asts(&args[..], &current_scope)?;
-                    self.run_function(name.to_string(), args)?
+                    let ret = self.run_function(name.to_string(), args)?;
+                    self.ret = false;
+                    self.brk = false;
+                    self.con = false;
+                    ret
                 },
                 ASTree::If { condition, body } => {
+                    // println!("ASTree::If");
                     if self.variable_from_ast(condition, &current_scope)?.borrow().to_bool() {
                         condition_failed = false;
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
@@ -221,6 +256,7 @@ impl CodeState {
                     } else {condition_failed = true}
                 },
                 ASTree::ElseIf { condition, body } => {
+                    // println!("ASTree::ElseIf");
                     if condition_failed && self.variable_from_ast(condition, &current_scope)?.borrow().to_bool() {
                         condition_failed = false;
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
@@ -229,6 +265,7 @@ impl CodeState {
                     }
                 },
                 ASTree::Else { body } => {
+                    // println!("ASTree::Else");
                     if condition_failed {
                         condition_failed = false;
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
@@ -237,6 +274,7 @@ impl CodeState {
                     }
                 },
                 ASTree::While { condition, body } => {
+                    // println!("ASTree::While");
                     if self.variable_from_ast(condition, &current_scope)?.borrow().to_bool() {
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
                         if self.ret {return Ok(ret_value);}
@@ -245,6 +283,7 @@ impl CodeState {
                     }
                 },
                 ASTree::Loop { body } => {
+                    // println!("ASTree::Loop");
                     loop {
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
                         if self.ret {return Ok(ret_value);}
@@ -253,10 +292,12 @@ impl CodeState {
                     }
                 },
                 ASTree::Return(value) => {
+                    // println!("ASTree::Return");
                     self.ret = true;
                     return self.variable_from_ast(value, &current_scope);
                 },
                 ASTree::For(var, ast_list, body) => {
+                    // println!("ASTree::For");
                     let list_ref = self.variable_from_ast(ast_list, &current_scope)?;
                     if let Variable::List(list) = &*list_ref.borrow() {
                         let mut loop_scope = current_scope.clone();
@@ -272,10 +313,12 @@ impl CodeState {
                     };
                 },
                 ASTree::Break => {
+                    // println!("ASTree::Break");
                     self.brk = true;
                     return Ok(Variable::None.into());
                 },
                 ASTree::Continue => {
+                    // println!("ASTree::Continue");
                     self.con = true;
                     return Ok(Variable::None.into());
                 },

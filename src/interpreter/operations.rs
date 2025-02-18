@@ -40,10 +40,14 @@ pub fn variable_operation(var1: VarRef, var2: VarRef, op: Op) -> Option<VarRef> 
                 string_operation(&x, &y, op)
             } else {unreachable!()}
         },
-        (_, VarType::String) => todo!(),
-        (VarType::String, _) => todo!(),
+
+        (VarType::Char, VarType::Char) => {
+            if let (Variable::Char(x), Variable::Char(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
+                char_operation(x, y, op)
+            } else {unreachable!()}
+        },
         
-        _ => todo!()
+        _ => None
     }
 }
 
@@ -105,6 +109,13 @@ fn bool_operation(x: bool, y: bool, op: Op) -> Option<VarRef> {
     Some(match op {
         Op::And => Variable::Bool(x&y).into(),
         Op::Or => Variable::Bool(x|y).into(),
+        _ => return None,
+    })
+}
+
+fn char_operation(x: char, y: char, op: Op) -> Option<VarRef> {
+    Some(match op {
+        Op::Equality => Variable::Bool(x==y).into(),
         _ => return None,
     })
 }
