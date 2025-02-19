@@ -11,7 +11,79 @@ func main() {
         "1___2___3",
     ];
 
-    print("value: ", test_sudoku(board));
+    let board = compile_board(board);
+    print(board);
+    reduce_board(board);
+    print(board);
+}
+
+func compile_board(board) {
+    let output = [];
+    for row in range(9) {
+        let new_row = [];
+        for char in range(9) {
+            if (board[row][char] == '_') {
+                push(new_row, [1,2,3,4,5,6,7,8,9]);
+            }
+            else {
+                push(new_row, int(board[row][char]));
+            }
+        }
+        push(output, new_row);
+    }
+    return output;
+}
+
+func reduce_board(board) {
+    let Int = type(0);
+    let List = type([]);
+    for i in range(9) {
+        // get a list of current numbers
+        let taken = [];
+        for j in range(9) {
+            if (type(board[i][j]) == Int) {
+                push(taken, board[i][j]);
+            }
+        }
+        // remove incorect posibilities
+        for j in range(9) {
+            if (type(board[i][j]) == List) {
+                let new_posibilities = [];
+                for posibility in range(len(board[i][j])) {
+                    if (contains(taken, board[i][j][posibility]) == false) {
+                        push(new_posibilities, board[i][j][posibility]);
+                    }
+                }
+                print("aa ", [[1]]);
+                let a = [[1]];
+                a[0][0] = 2;
+                board[i][j] = new_posibilities;
+                if (len(board[i][j]) == 1) {board[i][j] = board[i][j][0];}
+            }
+        }
+    }
+}
+
+func guess_one(board) {
+    let has_space = false;
+    for y in range(9) {
+        for x in range(9) {
+            if (board[y][x] != '_') {continue;}
+            has_space = true;
+            for i in range(9) {
+                let new_board = copy(board);
+                set(new_board[y], x, str(i+1)[0]);
+                if (test_sudoku(new_board)) {
+                    print(new_board);
+                    guess_one(new_board);
+                }
+            }
+        }
+    }
+    if (has_space == false) {
+        print(board);
+        exit();
+    }
 }
 
 func contains(list, object) {
@@ -23,22 +95,36 @@ func contains(list, object) {
     return false;
 }
 
+// returns false if it does not follow the rules of sudoku, and true if it does
 func test_sudoku(board) {
-    for y in range(len(board)) {
+    for y in range(9) {
         let x_list = [];
-        for x in range(len(board[y])) {
+        for x in range(9) {
             if (board[y][x] == "_"[0]) {continue;}
-            if (contains(x_list, board[y][x])) {return true;}
+            if (contains(x_list, board[y][x])) {return false;}
             push(x_list, board[y][x]);
         }
     }
-    for y in range(len(board)) {
+    for y in range(9) {
         let y_list = [];
-        for x in range(len(board[y])) {
+        for x in range(9) {
             if (board[x][y] == "_"[0]) {continue;}
-            if (contains(y_list, board[x][y])) {return true;}
+            if (contains(y_list, board[x][y])) {return false;}
             push(y_list, board[x][y]);
         }
     }
-    return false;
+    for block_x in [0,3,6] {
+        for block_y in [0,3,6] {
+            let list = [];
+            for x in [0,1,2] {
+                for y in [0,1,2] {
+                    if (board[block_y+y][block_x+x] == "_"[0]) {continue;}
+                    if (contains(list, board[block_y+y][block_x+x])) {return false;}
+                    push(list, board[block_y+y][block_x+x]);
+                }
+            }
+        }
+    }
+
+    return true;
 }

@@ -1,6 +1,7 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, Copy)]
+#[derive(PartialEq)]
 pub enum VarType {
     None,
     Bool,

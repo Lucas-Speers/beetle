@@ -17,6 +17,7 @@ pub enum TokenType {
         decimal: Option<u64>,
     },
     StringToken(String),
+    CharToken(char),
 
     Addition,
     Subtraction,
@@ -34,6 +35,7 @@ pub enum TokenType {
     Comma,
     Equal,
     DoubleEqual,
+    NotEqual,
 }
 
 pub struct Tokenizer {
@@ -87,6 +89,14 @@ impl Tokenizer {
                     self.get_next();
                     continue;
                 }
+
+                // check for `!=`
+                if current_char == '!' && self.input[self.index+1] == '=' {
+                    self.add_token(TokenType::NotEqual);
+                    self.get_next();
+                    self.get_next();
+                    continue;
+                }
             }
 
             // strings
@@ -109,6 +119,25 @@ impl Tokenizer {
                     s.push(next_char);
                 }
                 self.add_token(TokenType::StringToken(s));
+                continue;
+            }
+
+            // char
+            if current_char == '\'' {
+                self.get_next();
+                let mut next_char = self.get_next();
+                if next_char == '\\' {
+                    match self.get_next() {
+                        '\'' => next_char = '\'',
+                        'n' => next_char = '\n',
+                        _ => todo!()
+                    }
+                    continue;;
+                }
+                self.add_token(TokenType::CharToken(next_char));
+                if self.get_next() != '\'' {
+                    println!("Missing ' after char");
+                }
                 continue;
             }
 

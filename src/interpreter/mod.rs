@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self,
 use interpreter_error::{InterpError, InterpResult};
 use variables::{deep_copy, VarRef, VarType, Variable};
 
-use crate::ast::{ASTValue, ASTree, Function, FunctionDecleration};
+use crate::ast::{ASTValue, ASTree, Function, FunctionDecleration, Op};
 
 mod interpreter_error;
 mod operations;
@@ -44,6 +44,7 @@ impl CodeState {
             },
             ASTValue::Bool(bool) => Ok(Variable::Bool(*bool).into()),
             ASTValue::String(content) => Ok(Variable::String(content.to_string().into()).into()),
+            ASTValue::Char(content) => Ok(Variable::Char(*content).into()),
             ASTValue::Function(Function { name, args }) => {
                 let args = &self.variable_from_asts(&args[..], &local_scope)?;
                 self.run_function(name.to_string(), args)
@@ -146,9 +147,9 @@ impl CodeState {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
                         l.insert(i as usize, deep_copy(&args[2]));
                     } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
-                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+                }
 
-                Variable::None.into()
+                todo!()
             }
             "remove" => {
                 if args.len() != 2 {
@@ -157,10 +158,33 @@ impl CodeState {
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
                         return Ok(Some(l.remove(i as usize)));
-                    } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
-                } else {return Err(InterpError::IncorectType(VarType::List, args[0].borrow().to_type()));}
+                    }
+                    return Err(InterpError::IncorectType(VarType::Int, args[1].borrow().to_type()));
+                }
 
-                Variable::None.into()
+                todo!()
+            }
+            "set" => {
+                if args.len() != 3 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    if let Variable::Int(i) = *args[1].borrow() {
+                        l[i as usize] = deep_copy(&args[2]);
+                        return Ok(Some(Variable::None.into()));
+                    } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
+                }
+
+                if let Variable::String(ref mut l) = *args[0].borrow_mut() {
+                    if let Variable::Int(i) = *args[1].borrow() {
+                        if let Variable::Char(c) = *args[2].borrow() {
+                            l.replace_range((i as usize)..(i as usize + 1), &c.to_string());
+                            return Ok(Some(Variable::None.into()));
+                        } else {return Err(InterpError::IncorectType(VarType::Char, args[2].borrow().to_type()));}
+                    } else {return Err(InterpError::IncorectType(VarType::List, args[1].borrow().to_type()));}
+                }
+
+                todo!()
             }
             "type" => {
                 if args.len() != 1 {
@@ -174,6 +198,18 @@ impl CodeState {
                 }
                 if let Variable::String(s) = &*args[0].borrow() {
                     return Ok(Some(Variable::Int(s.parse().unwrap()).into()));
+                }
+                if let Variable::Char(c) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Int(c.to_string().parse().unwrap()).into()));
+                }
+                Variable::None.into()
+            }
+            "str" => {
+                if args.len() != 1 {
+                    return Err(InterpError::IncorectArgs);
+                }
+                if let Variable::Int(i) = &*args[0].borrow() {
+                    return Ok(Some(Variable::String(i.to_string()).into()));
                 }
                 Variable::None.into()
             }
@@ -218,7 +254,11 @@ impl CodeState {
         self.ret = false;
         self.brk = false;
         self.con = false;
-        self.run_ast_tree(&function.body, &function_scope)
+        let return_value = self.run_ast_tree(&function.body, &function_scope);
+        self.ret = false;
+        self.brk = false;
+        self.con = false;
+        return_value
     }
     fn run_ast_tree(&mut self, body: &Vec<ASTree>, scope: &HashMap<String, VarRef>) -> InterpResult<VarRef> {
         let mut current_scope = clone_scope(scope);
@@ -229,11 +269,23 @@ impl CodeState {
                     // println!("ASTree::Let");
                     current_scope.insert(variable.to_string(), self.variable_from_ast(&value, &current_scope)?);
                 },
-                ASTree::Assign { variable, value } => {
+                ASTree::Assign { variable, indexes, value } => {
                     // println!("ASTree::Assign");
-                    let value = self.variable_from_ast(&value, &current_scope)?;
+                    let mut value = self.variable_from_ast(&value, &current_scope)?;
+                    println!("{value:?}");
+                    
                     match current_scope.get_mut(&variable.to_string()) {
-                        Some(x) => *x.borrow_mut() = value.borrow().clone(),
+                        Some(x) => {
+                            let changing_var = x;
+                            for i in indexes {
+                                if let Some(new_var) = operations::variable_operation(value, self.variable_from_ast(i, &current_scope)?, Op::Indexing) {
+                                    changing_var = new_var.borrow_mut();
+                                    println!("{value:?}");
+                                }
+                                todo!()
+                            }
+                            *x.borrow_mut() = value.borrow().clone()
+                        },
                         None => return Err(InterpError::VarNotFound(variable.to_string())),
                     }
                 },
@@ -275,7 +327,7 @@ impl CodeState {
                 },
                 ASTree::While { condition, body } => {
                     // println!("ASTree::While");
-                    if self.variable_from_ast(condition, &current_scope)?.borrow().to_bool() {
+                    while self.variable_from_ast(condition, &current_scope)?.borrow().to_bool() {
                         let ret_value = self.run_ast_tree(body, &current_scope)?;
                         if self.ret {return Ok(ret_value);}
                         if self.brk {self.brk = false;break;}

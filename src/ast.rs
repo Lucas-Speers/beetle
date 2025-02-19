@@ -23,6 +23,7 @@ pub enum ASTree {
     },
     Assign {
         variable: String,
+        indexes: Vec<ASTValue>,
         value: ASTValue,
     },
     Function(Function),
@@ -57,6 +58,7 @@ pub enum Op {
     Multiplication,
     Division,
     Equality,
+    NotEquality,
     Indexing,
     And,
     Or,
@@ -66,7 +68,7 @@ impl Op {
     fn precidence(&self) -> u8 {
         match self {
             Op::And | Op::Or => 0,
-            Op::Equality => 1,
+            Op::Equality | Op::NotEquality => 1,
             Op::Addition | Op::Subtraction => 2,
             Op::Multiplication | Op::Division => 3,
             Op::Indexing => 4,
@@ -82,6 +84,7 @@ pub enum ASTValue {
         negative: bool,
     },
     String(String),
+    Char(char),
     Bool(bool),
     Function(Function),
     Variable(String),
@@ -219,7 +222,7 @@ impl ASTParser {
                     return self.parse_else()
                 },
                 _ => {
-                    if self.peek(1) == Equal { // x = y
+                    if (self.peek(1) == Equal) | (self.peek(1) == LeftBracket) { // x[] = y
                         return self.parse_assignment();
                     }
                     if self.peek(1) == LeftParren { // x()
@@ -236,10 +239,17 @@ impl ASTParser {
     
     fn parse_assignment(&mut self) -> ASTree {
         if let Identifier(variable) = self.next() {
+            // indexing
+            let mut indexes = Vec::new();
+            while self.peek(0) == LeftBracket {
+                self.next();
+                indexes.push(self.parse_value());
+                if self.next() != RightBracket {self.parse_error("Expected `]`")}
+            }
             if self.next() != Equal {self.parse_error("Expected `=`")}
             let value = self.parse_value();
             if self.next() != Semicolon {self.parse_error("Expected `;`")}
-            return ASTree::Assign { variable, value };
+            return ASTree::Assign { variable, indexes, value };
         }
         else {self.parse_error("Expected variable name")}
     }
@@ -400,6 +410,11 @@ impl ASTParser {
                         if self.next() != RightBracket {self.parse_error("Expected `]`")}
                     }
                 },
+                CharToken(content) => {
+                    expect_value(&values, &operations);
+                    self.next();
+                    values.push(ASTValue::Char(content));
+                },
                 Addition => {
                     expect_operation(&values, &operations);
                     self.next();
@@ -448,6 +463,11 @@ impl ASTParser {
                     expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Equality);
+                },
+                NotEqual => {
+                    expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::NotEquality);
                 },
                 LeftCurly | Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }

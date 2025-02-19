@@ -8,18 +8,12 @@ pub fn variable_operation(var1: VarRef, var2: VarRef, op: Op) -> Option<VarRef> 
     let types = (var1.borrow().to_type(), var2.borrow().to_type());
     if op == Op::Indexing {return indexing(types, var1, var2);}
     match types {
-        // anything with a `None` does not change
-        (VarType::None, _) => Some(var2),
-        (_, VarType::None) => Some(var1),
 
         (VarType::Bool, VarType::Bool) => {
             if let (Variable::Bool(x), Variable::Bool(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
                 bool_operation(x, y, op)
             } else {unreachable!()}
         },
-
-        (VarType::Bool, VarType::Int) => todo!(),
-        (VarType::Bool, VarType::Float) => todo!(),
         
         (VarType::Int, VarType::Int) => {
             if let (Variable::Int(x), Variable::Int(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
@@ -44,6 +38,12 @@ pub fn variable_operation(var1: VarRef, var2: VarRef, op: Op) -> Option<VarRef> 
         (VarType::Char, VarType::Char) => {
             if let (Variable::Char(x), Variable::Char(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
                 char_operation(x, y, op)
+            } else {unreachable!()}
+        },
+
+        (VarType::Type, VarType::Type) => {
+            if let (Variable::Type(x), Variable::Type(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
+                type_operation(x, y, op)
             } else {unreachable!()}
         },
         
@@ -74,6 +74,7 @@ fn int_operation(x: i64, y: i64, op: Op) -> Option<VarRef> {
         Op::Multiplication => Variable::Int(x*y).into(),
         Op::Division => Variable::Int(x/y).into(), // TODO: y is zero
         Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
         Op::Indexing => return None,
         Op::And => Variable::Int(x&y).into(),
         Op::Or => Variable::Int(x|y).into(),
@@ -87,6 +88,7 @@ fn float_operation(x: f64, y: f64, op: Op) -> Option<VarRef> {
         Op::Multiplication => Variable::Float(x*y).into(),
         Op::Division => Variable::Float(x/y).into(),
         Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
         Op::Indexing => return None,
         Op::And => return None,
         Op::Or => return None,
@@ -101,6 +103,7 @@ fn string_operation(x: &str, y: &str, op: Op) -> Option<VarRef> {
             Variable::String(new_string).into()
         },
         Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
         _ => return None,
     })
 }
@@ -109,6 +112,8 @@ fn bool_operation(x: bool, y: bool, op: Op) -> Option<VarRef> {
     Some(match op {
         Op::And => Variable::Bool(x&y).into(),
         Op::Or => Variable::Bool(x|y).into(),
+        Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
         _ => return None,
     })
 }
@@ -116,6 +121,15 @@ fn bool_operation(x: bool, y: bool, op: Op) -> Option<VarRef> {
 fn char_operation(x: char, y: char, op: Op) -> Option<VarRef> {
     Some(match op {
         Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
+        _ => return None,
+    })
+}
+
+fn type_operation(x: VarType, y: VarType, op: Op) -> Option<VarRef> {
+    Some(match op {
+        Op::Equality => Variable::Bool(x==y).into(),
+        Op::NotEquality => Variable::Bool(x!=y).into(),
         _ => return None,
     })
 }
