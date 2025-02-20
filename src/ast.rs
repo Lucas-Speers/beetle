@@ -7,6 +7,7 @@ pub struct FunctionDecleration {
     pub name: String,
     pub args: Vec<String>,
     pub body: Vec<ASTree>,
+    pub position: (usize, u64, u64),
 }
 
 #[derive(Debug, Clone)]
@@ -16,7 +17,13 @@ pub struct Function {
 }
 
 #[derive(Debug, Clone)]
-pub enum ASTree {
+pub struct ASTree(
+    pub (usize, u64, u64),
+    pub ASTreeType
+);
+
+#[derive(Debug, Clone)]
+pub enum ASTreeType {
     Let {
         variable: String,
         value: ASTValue,
@@ -103,6 +110,14 @@ impl ASTParser {
         ASTParser { tokens, index: 0 }
     }
 
+    fn get_position(&self) -> (usize, u64, u64) {
+        self.tokens[self.index-1].position
+    }
+
+    fn ast_tree(&self, t: ASTreeType) -> ASTree {
+        ASTree(self.get_position(), t)
+    }
+
     fn next(&mut self) -> TokenType {
         let t = self.tokens[self.index].token_type.clone();
         self.index += 1;
@@ -164,9 +179,10 @@ impl ASTParser {
     fn parse_function_decleration(&mut self) -> FunctionDecleration {
         if self.next() != Identifier("func".to_owned()) {self.parse_error("Expected `func` keyword")}
         if let Identifier(name) = self.next() {
+            let position = self.get_position();
             let args = self.parse_function_params();
             let body = self.parse_fuction_body();
-            return FunctionDecleration { name, args, body };
+            return FunctionDecleration { name, args, body, position };
         }
         else {
             self.parse_error("Expected function name");
@@ -228,7 +244,7 @@ impl ASTParser {
                     if self.peek(1) == LeftParren { // x()
                         let function = self.parse_function_call();
                         if self.next() != Semicolon {self.parse_error("Expected semicolon")}
-                        return ASTree::Function(function);
+                        return self.ast_tree(ASTreeType::Function(function));
                     }
                     self.parse_error("not implemented");
                 },
@@ -249,7 +265,7 @@ impl ASTParser {
             if self.next() != Equal {self.parse_error("Expected `=`")}
             let value = self.parse_value();
             if self.next() != Semicolon {self.parse_error("Expected `;`")}
-            return ASTree::Assign { variable, indexes, value };
+            return self.ast_tree(ASTreeType::Assign { variable, indexes, value });
         }
         else {self.parse_error("Expected variable name")}
     }
@@ -260,7 +276,7 @@ impl ASTParser {
             if self.next() != Equal {self.parse_error("Expected `=`")}
             let value = self.parse_value();
             if self.next() != Semicolon {self.parse_error("Expected `;`")}
-            return ASTree::Let { variable, value };
+            return self.ast_tree(ASTreeType::Let { variable, value });
         }
         else {self.parse_error("Expected variable name")}
     }
@@ -272,7 +288,7 @@ impl ASTParser {
         if self.next() != RightParren {self.parse_error("Expected `)`")}
         let body = self.parse_fuction_body();
 
-        return ASTree::If { condition, body };
+        return self.ast_tree(ASTreeType::If { condition, body });
     }
    
     fn parse_else_if(&mut self) -> ASTree {
@@ -283,14 +299,14 @@ impl ASTParser {
         if self.next() != RightParren {self.parse_error("Expected `)`")}
         let body = self.parse_fuction_body();
 
-        return ASTree::ElseIf { condition, body };
+        return self.ast_tree(ASTreeType::ElseIf { condition, body });
     }
 
     fn parse_else(&mut self) -> ASTree {
         if self.next() != Identifier("else".to_owned()) {self.parse_error("Expected `else`")}
         let body = self.parse_fuction_body();
 
-        return ASTree::Else { body };
+        return self.ast_tree(ASTreeType::Else { body });
     }
     
     fn parse_while(&mut self) -> ASTree {
@@ -300,14 +316,14 @@ impl ASTParser {
         if self.next() != RightParren {self.parse_error("Expected `)`")}
         let body = self.parse_fuction_body();
 
-        return ASTree::While { condition, body };
+        return self.ast_tree(ASTreeType::While { condition, body });
     }
     
     fn parse_loop(&mut self) -> ASTree {
         if self.next() != Identifier("loop".to_owned()) {self.parse_error("Expected `loop`")}
         let body = self.parse_fuction_body();
 
-        return ASTree::Loop { body };
+        return self.ast_tree(ASTreeType::Loop { body });
     }
 
     fn parse_for(&mut self) -> ASTree {
@@ -316,7 +332,7 @@ impl ASTParser {
             if self.next() != Identifier("in".to_owned()) {self.parse_error("Expected `in`")}
             let list = self.parse_value();
             let body = self.parse_fuction_body();
-            return ASTree::For(x, list, body);
+            return self.ast_tree(ASTreeType::For(x, list, body));
         } else {self.parse_error("Expected variable name after `for`")}
     }
 
@@ -325,21 +341,21 @@ impl ASTParser {
         let value = self.parse_value();
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
-        return ASTree::Return(value);
+        return self.ast_tree(ASTreeType::Return(value));
     }
 
     fn parse_break(&mut self) -> ASTree {
         if self.next() != Identifier("break".to_owned()) {self.parse_error("Expected `break`")}
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
-        return ASTree::Break;
+        return self.ast_tree(ASTreeType::Break);
     }
 
     fn parse_continue(&mut self) -> ASTree {
         if self.next() != Identifier("continue".to_owned()) {self.parse_error("Expected `continue`")}
         if self.next() != Semicolon {self.parse_error("Expected `;`")}
 
-        return ASTree::Continue;
+        return self.ast_tree(ASTreeType::Continue);
     }
     
     fn parse_function_call(&mut self) -> Function {

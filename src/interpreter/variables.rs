@@ -50,7 +50,14 @@ impl Display for Variable {
             Variable::Char(char) => Display::fmt(char, f),
             Variable::String(string) => Display::fmt(string, f),
             Variable::Type(var_type) => Display::fmt(var_type, f),
-            Variable::List(vec) => vec.iter().map(|v| Display::fmt(&v.borrow(), f).and(write!(f, " "))).collect(),
+            Variable::List(vec) => {
+                Display::fmt("[", f)
+                .and::<()>(vec.iter().enumerate().map(|(i, v)| 
+                    Display::fmt(&v.borrow(), f)
+                    .and(if (i != vec.len()-1) {write!(f, ", ")} else {Ok(())})).collect()
+                )
+                .and(Display::fmt("]", f))
+            },
         }
     }
 }

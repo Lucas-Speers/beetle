@@ -6,7 +6,10 @@ use super::VarType;
 
 pub type InterpResult<T> = std::result::Result<T, InterpError>;
 
-pub struct InterpError(pub InterpErrorType);
+pub struct InterpError(
+    pub (usize, u64, u64),
+    pub InterpErrorType,
+);
 
 pub enum InterpErrorType {
     VarNotFound(String),
@@ -18,7 +21,8 @@ pub enum InterpErrorType {
 
 impl Display for InterpError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.0 {
+        write!(f, "At {:?}: ", self.0);
+        match &self.1 {
             InterpErrorType::VarNotFound(var) => write!(f, "Cannot find variable: {var}"),
             InterpErrorType::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),
             InterpErrorType::IncorectArgs => write!(f, "Incorect arguments passed to function"),

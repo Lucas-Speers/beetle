@@ -25,16 +25,16 @@ fn main() -> Result<(), MainError> {
     let mut all_tokens: Vec<Token> = Vec::new();
     
     // hold a list of all files that need to be read from
-    let mut files_to_read: Vec<PathBuf> = Vec::new();
+    let mut files_to_read: Vec<String> = Vec::new();
     match cli.file.to_str() {
-        Some(x) => files_to_read.push(PathBuf::from(x)),
+        Some(x) => files_to_read.push(x.to_owned()),
         None => return Err(MainError::UnicodeError),
     }
     
     let mut file_index = 0;
     while files_to_read.len() > file_index {
-        let file = files::read_full_file(&files_to_read[file_index])?;
-        let mut tokens = Tokenizer::new(&file, files_to_read[file_index].to_str().unwrap()).generate();
+        let file = files::read_full_file(&PathBuf::from(files_to_read[file_index].clone()))?;
+        let mut tokens = Tokenizer::new(&file, file_index).generate();
 
         all_tokens.append(&mut tokens);
     
@@ -55,13 +55,15 @@ fn main() -> Result<(), MainError> {
 
     let (paths, functions) = ast::ASTParser::new(all_tokens).parse_all();
 
-    let mut code_state = interpreter::CodeState::new(functions);
-    let result = code_state.run_function("main".to_string(), &Vec::new());
+    std::thread::Builder::new().stack_size(8 * 1024 * 1024).spawn(||{
+        let mut code_state = interpreter::CodeState::new(functions);
+        let result = code_state.run_function("main".to_string(), &Vec::new(), (0,0,0));
+        match result {
+            Ok(_) => (),
+            Err(x) => println!("{x}"),
+        }
+    }).unwrap().join().unwrap();
     
-    match result {
-        Ok(_) => (),
-        Err(x) => println!("{x}"),
-    }
 
     Ok(())
 }

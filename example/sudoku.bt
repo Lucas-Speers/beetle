@@ -11,9 +11,32 @@ func main() {
         "1___2___3",
     ];
 
+    let board = [
+        "__814_9_2",
+        "_2_673___",
+        "_612__374",
+        "19__24_53",
+        "7______1_",
+        "_32____9_",
+        "__738_6_9",
+        "9__7__5_1",
+        "61_____2_",
+    ];
+
     let board = compile_board(board);
     reduce_board(board);
     guess_one(board);
+}
+
+func print_board(board) {
+    for row in board {
+        for item in row {
+            if (type(item) == type([])) {printsl("_");}
+            else {printsl(item);}
+        }
+        print();
+    }
+    print();
 }
 
 func compile_board(board) {
@@ -70,12 +93,14 @@ func guess_one(board) {
     for y in range(9) {
         for x in range(9) {
             if (type(board[y][x]) == Int) {continue;}
+            if (len(board[y][x]) == 0) {return None;}
             has_space = true;
             for i in board[y][x] {
                 let new_board = copy(board);
-                set(new_board[y], x, str(i+1)[0]);
+                new_board[y][x] = i;
+                reduce_board(new_board);
                 if (test_sudoku(new_board)) {
-                    print(new_board);
+                    print_board(new_board);
                     guess_one(new_board);
                 }
             }
