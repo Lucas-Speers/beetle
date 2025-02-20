@@ -91,7 +91,7 @@ impl From<Variable> for Rc<RefCell<Variable>> {
 }
 
 pub fn deep_copy(item: &VarRef) -> VarRef {
-    match *item.borrow_mut() {
+    match *item.borrow() {
         Variable::None => Variable::None,
         Variable::Bool(x) => Variable::Bool(x),
         Variable::Int(x) => Variable::Int(x),

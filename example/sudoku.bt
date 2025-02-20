@@ -12,9 +12,8 @@ func main() {
     ];
 
     let board = compile_board(board);
-    print(board);
     reduce_board(board);
-    print(board);
+    guess_one(board);
 }
 
 func compile_board(board) {
@@ -37,6 +36,7 @@ func compile_board(board) {
 func reduce_board(board) {
     let Int = type(0);
     let List = type([]);
+
     for i in range(9) {
         // get a list of current numbers
         let taken = [];
@@ -54,23 +54,24 @@ func reduce_board(board) {
                         push(new_posibilities, board[i][j][posibility]);
                     }
                 }
-                print("aa ", [[1]]);
-                let a = [[1]];
-                a[0][0] = 2;
                 board[i][j] = new_posibilities;
-                if (len(board[i][j]) == 1) {board[i][j] = board[i][j][0];}
+                if (len(board[i][j]) == 1) {
+                    board[i][j] = board[i][j][0];
+                }
             }
         }
     }
 }
 
 func guess_one(board) {
+    let Int = type(0);
+
     let has_space = false;
     for y in range(9) {
         for x in range(9) {
-            if (board[y][x] != '_') {continue;}
+            if (type(board[y][x]) == Int) {continue;}
             has_space = true;
-            for i in range(9) {
+            for i in board[y][x] {
                 let new_board = copy(board);
                 set(new_board[y], x, str(i+1)[0]);
                 if (test_sudoku(new_board)) {
@@ -97,10 +98,12 @@ func contains(list, object) {
 
 // returns false if it does not follow the rules of sudoku, and true if it does
 func test_sudoku(board) {
+    let List = type([]);
+
     for y in range(9) {
         let x_list = [];
         for x in range(9) {
-            if (board[y][x] == "_"[0]) {continue;}
+            if (type(board[y][x]) == List) {continue;}
             if (contains(x_list, board[y][x])) {return false;}
             push(x_list, board[y][x]);
         }
@@ -108,7 +111,7 @@ func test_sudoku(board) {
     for y in range(9) {
         let y_list = [];
         for x in range(9) {
-            if (board[x][y] == "_"[0]) {continue;}
+            if (type(board[x][y]) == List) {continue;}
             if (contains(y_list, board[x][y])) {return false;}
             push(y_list, board[x][y]);
         }
@@ -118,7 +121,7 @@ func test_sudoku(board) {
             let list = [];
             for x in [0,1,2] {
                 for y in [0,1,2] {
-                    if (board[block_y+y][block_x+x] == "_"[0]) {continue;}
+                    if (type(board[block_y+y][block_x+x]) == List) {continue;}
                     if (contains(list, board[block_y+y][block_x+x])) {return false;}
                     push(list, board[block_y+y][block_x+x]);
                 }
