@@ -11,5 +11,5 @@ This language is nowhere near done at the moment
 Install Rust and run the following command:
 
 ```bash
-cargo run -- example/main.bt
+cargo run -- example/tictactoe.bt
 ```
