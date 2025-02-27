@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, process, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, ops::DerefMut, process, rc::Rc};
 
 use interpreter_error::{InterpError, InterpResult, InterpErrorType::*};
 use variables::{deep_copy, VarRef, VarType, Variable};
@@ -70,6 +70,15 @@ impl CodeState {
                 }
             },
             ASTValue::List(vec) => Ok(Variable::List(self.variable_from_asts(&vec, local_scope, position)?).into()),
+            ASTValue::Hash(hash) => {
+                let mut new_hash = HashMap::new();
+
+                for (k, v) in hash {
+                    new_hash.insert(k.to_string(), self.variable_from_ast(v, local_scope, position)?);
+                }
+
+                Ok(Variable::Hash(Box::new(new_hash)).into())
+            },
             ASTValue::None => Ok(Variable::None.into()),
         };
     }
@@ -247,6 +256,14 @@ impl CodeState {
                 }
                 todo!()
             }
+            "contains" => {
+                if args.len() != 2 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                if let Variable::List(ref mut l) = *args[0].borrow_mut() {
+                    Variable::Bool(l.contains(&args[1])).into()
+                } else {todo!()}
+            }
             _ => return Ok(None),
         }))
     }
@@ -279,17 +296,37 @@ impl CodeState {
                 },
                 ASTreeType::Assign { variable, indexes, value } => {
                     // println!("ASTreeType::Assign");
+                    // value to be put into the variable
                     let mut value = self.variable_from_ast(&value, &current_scope, position)?;
-                    // println!("{value:?}");
                     
                     match current_scope.get(&variable.to_string()) {
                         Some(x) => { // original varialbe
                             let mut changing_var = Rc::clone(x);
                             for i in indexes {
                                 let indecie = self.variable_from_ast(i, &current_scope, position)?;
+
+                                let var_type = changing_var.borrow().to_type();
+                                if let VarType::Hash = var_type { // special rules if it's a hashmap
+                                    let new_var;
+                                    {
+                                        let mut hash = changing_var.borrow_mut();
+                                        if let Variable::Hash(h) = hash.deref_mut() {
+                                            if let Variable::String(ref s) = indecie.borrow().clone() {
+                                                if let Some(v) = h.get(s) {
+                                                    new_var = Rc::clone(v);
+                                                } else {
+                                                    new_var = Variable::None.into();
+                                                    h.insert(s.to_string(), Rc::clone(&new_var));
+                                                }
+                                            } else {return Err(InterpError(position, NoOperation(value.borrow().to_type(), indecie.borrow().to_type(), Op::Indexing)));}
+                                        } else {unreachable!()}
+                                    }
+                                    changing_var = new_var;
+                                    break;
+                                }
+
                                 if let Some(new_var) = operations::variable_operation(changing_var, Rc::clone(&indecie), Op::Indexing) {
                                     changing_var = Rc::clone(&new_var);
-                                    // println!("changed ({variable}): {changing_var:?}");
                                 } else {
                                     return Err(InterpError(position, NoOperation(value.borrow().to_type(), indecie.borrow().to_type(), Op::Indexing)));
                                 }

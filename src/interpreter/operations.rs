@@ -63,6 +63,14 @@ fn indexing(types: (VarType, VarType), var1: VarRef, var2: VarRef) -> Option<Var
                 Variable::Char(x.chars().nth(y as usize).unwrap()).into()
             } else {unreachable!()}
         },
+        (VarType::Hash, VarType::String) => {
+            if let (Variable::Hash(x), Variable::String(ref y)) = (var1.borrow().clone(), var2.borrow().clone()) {
+                if let Some(x) = x.get(y) {return Some(Rc::clone(x));}
+                else {
+                    return Some(Variable::None.into());
+                }
+            } else {unreachable!()}
+        },
         _ => return None,
     })
 }

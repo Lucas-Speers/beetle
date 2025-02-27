@@ -1,15 +1,15 @@
 func main() {
-    let board = [
-        "5___1___4",
-        "274___6__",
-        "_8_9_4___",
-        "81_46_3_2",
-        "__2_3_1__",
-        "7_6_91_58",
-        "___5_3_1_",
-        "__5___927",
-        "1___2___3",
-    ];
+    // let board = [
+    //     "5___1___4",
+    //     "274___6__",
+    //     "_8_9_4___",
+    //     "81_46_3_2",
+    //     "__2_3_1__",
+    //     "7_6_91_58",
+    //     "___5_3_1_",
+    //     "__5___927",
+    //     "1___2___3",
+    // ];
 
     let board = [
         "__814_9_2",
@@ -22,6 +22,18 @@ func main() {
         "9__7__5_1",
         "61_____2_",
     ];
+
+    // let board = [
+    //     "___1_2___",
+    //     "_6_____7_",
+    //     "__8___9__",
+    //     "4_______3",
+    //     "_5___7___",
+    //     "2___8___1",
+    //     "__9___8_5",
+    //     "_7_____6_",
+    //     "___3_4___",
+    // ];
 
     let board = compile_board(board);
     reduce_board(board);
@@ -84,6 +96,31 @@ func reduce_board(board) {
             }
         }
     }
+
+    let taken = [[],[],[],[],[],[],[],[],[]];
+    for i in range(9) {
+        // get a list of current numbers
+        for j in range(9) {
+            if (type(board[i][j]) == Int) {
+                push(taken[j], board[i][j]);
+            }
+        }
+        // remove incorect posibilities
+        for j in range(9) {
+            if (type(board[i][j]) == List) {
+                let new_posibilities = [];
+                for posibility in range(len(board[i][j])) {
+                    if (contains(taken[j], board[i][j][posibility]) == false) {
+                        push(new_posibilities, board[i][j][posibility]);
+                    }
+                }
+                board[i][j] = new_posibilities;
+                if (len(board[i][j]) == 1) {
+                    board[i][j] = board[i][j][0];
+                }
+            }
+        }
+    }
 }
 
 func guess_one(board) {
@@ -93,7 +130,7 @@ func guess_one(board) {
     for y in range(9) {
         for x in range(9) {
             if (type(board[y][x]) == Int) {continue;}
-            if (len(board[y][x]) == 0) {return None;}
+            if (len(board[y][x]) == 0) {return none;}
             has_space = true;
             for i in board[y][x] {
                 let new_board = copy(board);
@@ -104,21 +141,13 @@ func guess_one(board) {
                     guess_one(new_board);
                 }
             }
+            return none;
         }
     }
     if (has_space == false) {
         print(board);
         exit();
     }
-}
-
-func contains(list, object) {
-    for i in list {
-        if (i == object) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // returns false if it does not follow the rules of sudoku, and true if it does

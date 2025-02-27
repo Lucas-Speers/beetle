@@ -1,0 +1,7 @@
+func main() {
+    let x = {"hi" = 4, "bye" = 5};
+    print(x);
+    print(x["hi"]);
+    x["uh"] = 6;
+    print(x);
+}

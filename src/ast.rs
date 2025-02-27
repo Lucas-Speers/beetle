@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process::exit};
+use std::{collections::HashMap, path::PathBuf, process::exit};
 
 use crate::lex::{Token, TokenType::{self, *}};
 
@@ -97,6 +97,7 @@ pub enum ASTValue {
     Variable(String),
     Operation(Box<ASTValue>, Box<ASTValue>, Op),
     List(Vec<ASTValue>),
+    Hash(HashMap<String, ASTValue>),
     None,
 }
 
@@ -462,6 +463,24 @@ impl ASTParser {
                     operations.push(Op::Or);
                 },
                 LeftParren => todo!(),
+                LeftCurly => {
+                    if let StringToken(_) = self.peek(0) {
+                        expect_value(&values, &operations);
+                    } else {break;}
+                    self.next();
+                    let mut new_hashmap = HashMap::new();
+                    loop {
+                        if let RightCurly = self.peek(0) {self.next(); break;}
+                        if let StringToken(s) = self.next() {
+                            if let Equal = self.next() {
+                                let value = self.parse_value();
+                                new_hashmap.insert(s, value);
+                            }
+                        }
+                        if let Comma = self.peek(0) {self.next();}
+                    }
+                    values.push(ASTValue::Hash(new_hashmap));
+                }
                 LeftBracket => {
                     expect_value(&values, &operations);
                     self.next();
@@ -485,7 +504,7 @@ impl ASTParser {
                     self.next();
                     operations.push(Op::NotEquality);
                 },
-                LeftCurly | Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
+                Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }
         }
         

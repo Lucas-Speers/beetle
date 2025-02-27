@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, Copy)]
 #[derive(PartialEq)]
@@ -11,6 +11,7 @@ pub enum VarType {
     String,
     Type,
     List,
+    Hash
 }
 
 impl Display for VarType {
@@ -24,11 +25,13 @@ impl Display for VarType {
             VarType::String => write!(f, "String"),
             VarType::Type => write!(f, "Type"),
             VarType::List => write!(f, "List"),
+            VarType::Hash => write!(f, "Hash"),
         }
     }
 }
 
 #[derive(Debug, Clone)]
+#[derive(PartialEq)]
 pub enum Variable {
     None,
     Bool(bool),
@@ -38,6 +41,7 @@ pub enum Variable {
     String(String),
     Type(VarType),
     List(Vec<VarRef>),
+    Hash(Box<HashMap<String, VarRef>>),
 }
 
 impl Display for Variable {
@@ -58,6 +62,16 @@ impl Display for Variable {
                 )
                 .and(Display::fmt("]", f))
             },
+            Variable::Hash(hash) => {
+                Display::fmt("{", f)
+                .and::<()>(hash.iter().enumerate().map(|(i, (k, v))| 
+                    Display::fmt(&k, f)
+                    .and::<()>(Display::fmt("=", f))
+                    .and::<()>(Display::fmt(&v.borrow(), f))
+                    .and(if (i != hash.len()-1) {write!(f, ", ")} else {Ok(())})).collect()
+                )
+                .and(Display::fmt("}", f))
+            },
         }
     }
 }
@@ -73,6 +87,7 @@ impl Variable {
             Variable::String(string) => !string.is_empty(),
             Variable::Type(_) => true,
             Variable::List(vec) => !vec.is_empty(),
+            Variable::Hash(hash) => !hash.is_empty(),
         }
     }
     pub fn to_type(&self) -> VarType {
@@ -85,6 +100,7 @@ impl Variable {
             Variable::String(_) => VarType::String,
             Variable::Type(_) => VarType::Type,
             Variable::List(_) => VarType::List,
+            Variable::Hash(_) => VarType::Hash,
         }
     }
 }
@@ -107,5 +123,14 @@ pub fn deep_copy(item: &VarRef) -> VarRef {
         Variable::String(ref x) => Variable::String(x.clone()),
         Variable::Type(var_type) => Variable::Type(var_type),
         Variable::List(ref vec) => Variable::List(vec.iter().map(|i| deep_copy(i)).collect()),
+        Variable::Hash(ref hash) => {
+            let mut new_hash = HashMap::new();
+            
+            for (k, v) in hash.iter() {
+                new_hash.insert(k.to_string(), deep_copy(v));
+            }
+
+            Variable::Hash(Box::new(new_hash)).into()
+        },
     }.into()
 }
