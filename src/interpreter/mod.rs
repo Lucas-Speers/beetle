@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, ops::DerefMut, process, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, net::TcpListener, ops::DerefMut, process, rc::Rc, sync::{Mutex, OnceLock}};
 
 use interpreter_error::{InterpError, InterpResult, InterpErrorType::*};
 use variables::{deep_copy, VarRef, VarType, Variable};
@@ -9,6 +9,7 @@ mod interpreter_error;
 mod operations;
 mod variables;
 
+static LISTENER: Mutex<RefCell<Option<TcpListener>>> = Mutex::new(RefCell::new(None));
 
 type VariableScope = HashMap<String, VarRef>;
 
@@ -263,6 +264,22 @@ impl CodeState {
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     Variable::Bool(l.contains(&args[1])).into()
                 } else {todo!()}
+            }
+            "tcp_bind" => {
+                if args.len() != 1 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                if let Variable::String(s) = &*args[0].borrow_mut() {
+                    *LISTENER.get_mut().unwrap().get_mut() = Some(TcpListener::bind(s).unwrap());
+                } else {todo!()}
+                Variable::None.into()
+            }
+            "tcp_listen" => {
+                if args.len() != 0 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                let incoming = LISTENER.get_mut().unwrap().get_mut();
+                Variable::None.into()
             }
             _ => return Ok(None),
         }))
