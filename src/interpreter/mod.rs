@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, Write}, net::TcpListener, ops::DerefMut, process, rc::Rc, sync::{Mutex, OnceLock}};
+use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, BufRead, BufReader, Read, Write}, net::{TcpListener, TcpStream}, ops::DerefMut, process, rc::Rc, sync::{Mutex, OnceLock}};
 
 use interpreter_error::{InterpError, InterpResult, InterpErrorType::*};
 use variables::{deep_copy, VarRef, VarType, Variable};
@@ -8,8 +8,6 @@ use crate::ast::{ASTValue, ASTree, ASTreeType, Function, FunctionDecleration, Op
 mod interpreter_error;
 mod operations;
 mod variables;
-
-static LISTENER: Mutex<RefCell<Option<TcpListener>>> = Mutex::new(RefCell::new(None));
 
 type VariableScope = HashMap<String, VarRef>;
 
@@ -29,12 +27,14 @@ pub struct CodeState {
     ret: bool,
     brk: bool,
     con: bool,
+    tcp_listener: Option<TcpListener>,
+    tcp_stream: Option<TcpStream>,
 }
 
 impl CodeState {
     pub fn new(functions: Vec<FunctionDecleration>) -> Self {
         let global_var_scope = VariableScope::new();
-        return CodeState { functions, global_var_scope, position: (0,0,0), ret: false, brk: false, con: false };
+        return CodeState { functions, global_var_scope, position: (0,0,0), ret: false, brk: false, con: false, tcp_listener: None, tcp_stream: None };
     }
     fn variable_from_ast(&mut self, value: &ASTValue, local_scope: &VariableScope, position: (usize, u64, u64)) -> InterpResult<VarRef> {
         return match value {
@@ -269,17 +269,49 @@ impl CodeState {
                 if args.len() != 1 {
                     return Err(InterpError(position, IncorectArgs));
                 }
-                if let Variable::String(s) = &*args[0].borrow_mut() {
-                    *LISTENER.get_mut().unwrap().get_mut() = Some(TcpListener::bind(s).unwrap());
+                if let Variable::String(ref s) = *args[0].borrow() {
+                    self.tcp_listener = Some(TcpListener::bind(s).unwrap());
                 } else {todo!()}
+                Variable::None.into()
+            }
+            "tcp_unbind" => {
+                if args.len() != 0 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                self.tcp_listener = None;
                 Variable::None.into()
             }
             "tcp_listen" => {
                 if args.len() != 0 {
                     return Err(InterpError(position, IncorectArgs));
                 }
-                let incoming = LISTENER.get_mut().unwrap().get_mut();
+                let mut request = String::new();
+                let (mut incoming, addr) = self.tcp_listener.as_mut().unwrap().accept().unwrap();
+                let mut reader = BufReader::new(&incoming);
+                reader.read_line(&mut request);
+                self.tcp_stream = Some(incoming);
+                Variable::String(request).into()
+            }
+            "tcp_write" => {
+                if args.len() != 1 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                if let Variable::String(ref s) = *args[0].borrow() {
+                    self.tcp_stream.as_mut().unwrap().write_all(s.as_bytes()).unwrap();
+                    self.tcp_stream = None;
+                }
                 Variable::None.into()
+            }
+            "split" => {
+                if args.len() != 2 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                if let Variable::String(ref s) = *args[0].borrow() {
+                    if let Variable::String(ref d) = *args[1].borrow() {
+                        return Ok(Some(Variable::List(s.split(d).map(|a| Variable::String(a.to_string()).into()).collect()).into()));
+                    }
+                }
+                todo!()
             }
             _ => return Ok(None),
         }))

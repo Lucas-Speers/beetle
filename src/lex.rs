@@ -106,6 +106,7 @@ impl Tokenizer {
                         match self.get_next() {
                             '"' => s.push('"'),
                             'n' => s.push('\n'),
+                            'r' => s.push('\r'),
                             _ => todo!()
                         }
                         continue;;
@@ -127,6 +128,7 @@ impl Tokenizer {
                     match self.get_next() {
                         '\'' => next_char = '\'',
                         'n' => next_char = '\n',
+                        'r' => next_char = '\r',
                         _ => todo!()
                     }
                     continue;;

@@ -1,7 +1,8 @@
 func main() {
-    let x = {"hi" = 4, "bye" = 5};
-    print(x);
-    print(x["hi"]);
-    x["uh"] = 6;
-    print(x);
+    tcp_bind("127.0.0.1:5000");
+    loop {
+        let request = split(tcp_listen(), " ");
+        print(request[1]);
+        tcp_write("HTTP/1.1 200 OK\r\nContent-Length: 12\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nHello World!\r\n");
+    }
 }
