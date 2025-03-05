@@ -57,6 +57,21 @@ impl Tokenizer {
     fn add_token(&mut self, token_type: TokenType) {
         self.tokens.push(Token { token_type, position: self.position });
     }
+    fn consume_char(&mut self, escaped: &mut bool) -> char {
+        let mut next_char = self.get_next();
+        if next_char == '\\' {
+            *escaped = true;
+            match self.get_next() {
+                '\'' => next_char = '\'',
+                '\\' => next_char = '\\',
+                'n' => next_char = '\n',
+                'r' => next_char = '\r',
+                _ => todo!()
+            }
+        }
+
+        return next_char;
+    }
     pub fn generate(&mut self) -> Vec<Token> {
         loop {
             if self.input.len() == self.index {break;}
@@ -101,19 +116,9 @@ impl Tokenizer {
                 self.get_next();
                 let mut s = String::new();
                 loop {
-                    let next_char = self.get_next();
-                    if next_char == '\\' {
-                        match self.get_next() {
-                            '"' => s.push('"'),
-                            'n' => s.push('\n'),
-                            'r' => s.push('\r'),
-                            _ => todo!()
-                        }
-                        continue;;
-                    } // todo
-                    if next_char == '"' {
-                        break;
-                    }
+                    let mut escaped = false;
+                    let next_char = self.consume_char(&mut escaped);
+                    if (next_char == '"') & !escaped {break;}
                     s.push(next_char);
                 }
                 self.add_token(TokenType::StringToken(s));
@@ -123,16 +128,7 @@ impl Tokenizer {
             // char
             if current_char == '\'' {
                 self.get_next();
-                let mut next_char = self.get_next();
-                if next_char == '\\' {
-                    match self.get_next() {
-                        '\'' => next_char = '\'',
-                        'n' => next_char = '\n',
-                        'r' => next_char = '\r',
-                        _ => todo!()
-                    }
-                    continue;;
-                }
+                let mut next_char = self.consume_char(&mut false);
                 self.add_token(TokenType::CharToken(next_char));
                 if self.get_next() != '\'' {
                     println!("Missing ' after char");
