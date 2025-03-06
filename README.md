@@ -20,7 +20,6 @@ cargo run -- example/tictactoe.bt
 - Literal Strings
 - Literal Chars
 - Literal Ints
-- Literal Floats
 - Operators (Mostly)
 - Create Variables
 - Assign Variables
