@@ -136,13 +136,13 @@ impl ASTParser {
         self.index < self.tokens.len()
     }
     
-    pub fn parse_all(&mut self) -> (Vec<PathBuf>, Vec<FunctionDecleration>) {
+    pub fn parse_all(&mut self) -> (Vec<String>, Vec<FunctionDecleration>) {
         let imports = self.parse_imports();
         let functions = self.parse_functions();
         (imports, functions)
     }
     
-    fn parse_imports(&mut self) -> Vec<PathBuf> {
+    fn parse_imports(&mut self) -> Vec<String> {
         let mut imported_files = Vec::new();
         loop { // check all the imports
             if self.has_more() {
@@ -151,7 +151,7 @@ impl ASTParser {
                     if name == "import" {
                         self.next();
                         if let StringToken(content) = self.next() {
-                            imported_files.push(PathBuf::from(content));
+                            imported_files.push(content);
                             continue;
                         } else {unreachable!();}
                     }

@@ -1,16 +1,17 @@
 use std::{env, path::Path};
 
-use crate::MainError;
-
-pub fn read_full_file(path: &Path) -> Result<String, MainError> {
+pub fn read_full_file(path: &Path) -> Result<String, ()> {
 
     if !path.exists() {
-        return Err(MainError::FileNotFound);
+        println!("File: `{:?}` not found", path);
+        return Err(());
     }
 
-    let content = std::fs::read(path).map_err(|_| MainError::FileNotFound)?;
+    if let Ok(content) = std::fs::read(path) {
+        if let Ok(string) = String::from_utf8(content) {
+            return Ok(string);
+        }
+    }
 
-    let string = String::from_utf8(content).map_err(|_| MainError::UnicodeError)?;
-
-    Ok(string)
+    Err(())
 }
