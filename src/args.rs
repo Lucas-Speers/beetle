@@ -1,9 +1,7 @@
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
-use clap::Parser;
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-pub struct Cli {
-    pub file: PathBuf,
+pub fn get_arg() -> Option<String> {
+    let mut args = env::args();
+    args.next(); // beetle
+    args.next()
 }

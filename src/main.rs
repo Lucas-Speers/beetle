@@ -3,8 +3,6 @@
 use std::path::{Path, PathBuf};
 
 use ast::FunctionDecleration;
-use clap::Parser;
-use args::Cli;
 
 use lex::{Token, TokenType, Tokenizer};
 
@@ -15,7 +13,6 @@ mod ast;
 mod interpreter;
 
 fn main() -> Result<(), ()> {
-    let cli = Cli::parse();
     
     let mut all_functions: Vec<FunctionDecleration> = Vec::new();
 
@@ -23,7 +20,7 @@ fn main() -> Result<(), ()> {
     
     // hold a list of all files that need to be read from
     let mut files_to_read: Vec<String> = Vec::new();
-    match cli.file.to_str() {
+    match args::get_arg() {
         Some(x) => {
             orig_path = PathBuf::from(x);
             files_to_read.push(orig_path.file_name().unwrap().to_str().unwrap().to_string());
