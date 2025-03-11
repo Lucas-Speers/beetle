@@ -45,7 +45,7 @@ impl CodeState {
             ASTValue::Char(content) => Ok(Variable::Char(*content).into()),
             ASTValue::Function(Function { name, args }) => {
                 let args = &self.variable_from_asts(&args[..], &local_scope, position)?;
-                self.run_function(name.to_string(), args, position)
+                self.run_function(name, args, position)
             },
             ASTValue::Variable(name) => {
                 if local_scope.contains_key(name) {
@@ -82,10 +82,10 @@ impl CodeState {
     fn variable_from_asts(&mut self, values: &[ASTValue], local_scope: &VariableScope, position: (usize, u64, u64)) -> InterpResult<Vec<VarRef>> {
         values.iter().map(|v| self.variable_from_ast(v, local_scope, position)).collect()
     }
-    fn get_function(&self, name: String, position: (usize, u64, u64)) -> InterpResult<FunctionDecleration> {
+    fn get_function(&self, name: &str, position: (usize, u64, u64)) -> InterpResult<FunctionDecleration> {
         let valid_functions: Vec<&FunctionDecleration> = self.functions.iter().filter(|f| f.name == name).collect();
         if valid_functions.len() == 0 {
-            return Err(InterpError(position, FuncNotFound(name)));
+            return Err(InterpError(position, FuncNotFound(name.to_string())));
         }
         return Ok(valid_functions[0].clone());
     }
@@ -312,8 +312,8 @@ impl CodeState {
             _ => return Ok(None),
         }))
     }
-    pub fn run_function(&mut self, function_name: String, args: &Vec<VarRef>, position: (usize, u64, u64)) -> InterpResult<VarRef> {
-        if let Some(value) = self.built_in_funtion(&function_name, args, position)? {return Ok(value);}
+    pub fn run_function(&mut self, function_name: &str, args: &Vec<VarRef>, position: (usize, u64, u64)) -> InterpResult<VarRef> {
+        if let Some(value) = self.built_in_funtion(function_name, args, position)? {return Ok(value);}
         let function = self.get_function(function_name, position)?;
         let mut function_scope = VariableScope::new();
         if function.args.len() != args.len() {return Err(InterpError(function.position, IncorectArgs));}
@@ -384,7 +384,7 @@ impl CodeState {
                 ASTreeType::Function(Function { name, args }) => _ = {
                     // println!("ASTreeType::Function");
                     let args = &self.variable_from_asts(&args[..], &current_scope, position)?;
-                    let ret = self.run_function(name.to_string(), args, position)?;
+                    let ret = self.run_function(name, args, position)?;
                     self.ret = false;
                     self.brk = false;
                     self.con = false;

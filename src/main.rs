@@ -46,7 +46,7 @@ fn main() -> Result<(), ()> {
 
     std::thread::Builder::new().stack_size(8 * 1024 * 1024).spawn(||{
         let mut code_state = interpreter::CodeState::new(all_functions);
-        let result = code_state.run_function("main".to_string(), &Vec::new(), (0,0,0));
+        let result = code_state.run_function("main", &Vec::new(), (0,0,0));
         match result {
             Ok(_) => (),
             Err(x) => println!("{x}"),
