@@ -10,10 +10,8 @@ pub struct Token {
 pub enum TokenType {
     Semicolon,
     Identifier(String),
-    Number {
-        whole: u64,
-        decimal: Option<u64>,
-    },
+    Int(i64),
+    Float(f64),
     StringToken(String),
     CharToken(char),
 
@@ -76,7 +74,6 @@ impl Tokenizer {
         loop {
             if self.input.len() == self.index {break;}
             let current_char = self.input[self.index];
-            // println!("{current_char}");
 
             // ignore whitespace
             if current_char.is_whitespace() {
@@ -138,19 +135,31 @@ impl Tokenizer {
 
             // numbers
             if current_char.is_ascii_digit() {
-                let mut whole = self.get_next().to_digit(10).unwrap() as u64;
+                let mut int = self.get_next().to_digit(10).unwrap() as i64;
                 loop {
                     let next_char = self.input[self.index];
                     if !next_char.is_ascii_digit() {break;}
-                    whole *= 10;
-                    whole += next_char.to_digit(10).unwrap() as u64;
+                    int *= 10;
+                    int += next_char.to_digit(10).unwrap() as i64;
                     self.get_next();
                 }
 
-                let decimal = None;
-                if self.input[self.index] == '.' {todo!()}
+                if self.input[self.index] == '.' {
+                    self.get_next();
+                    let mut float = int as f64;
+                    let mut decimal = 10.0;
+                    loop {
+                        let next_char = self.input[self.index];
+                        if !next_char.is_ascii_digit() {break;}
+                        float += next_char.to_digit(10).unwrap() as f64 / decimal;
+                        decimal *= 10.0;
+                        self.get_next();
+                    }
+                    self.add_token(TokenType::Float(float));
+                    continue;
+                }
 
-                self.add_token(TokenType::Number { whole, decimal });
+                self.add_token(TokenType::Int(int));
                 continue;
             }
 

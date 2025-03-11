@@ -1,7 +1,7 @@
-import "sudoku.bt"
-import "tictactoe.bt"
 import "lib.bt"
 
 func main() {
     test();
+    print(5);
+    print(5.65);
 }

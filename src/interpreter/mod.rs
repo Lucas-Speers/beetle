@@ -38,12 +38,8 @@ impl CodeState {
     }
     fn variable_from_ast(&mut self, value: &ASTValue, local_scope: &VariableScope, position: (usize, u64, u64)) -> InterpResult<VarRef> {
         return match value {
-            ASTValue::Number { whole, decimal, negative  } => {
-                match decimal {
-                    Some(_) => todo!(),
-                    None => Ok(Variable::Int( if *negative {-(*whole as i64)} else {*whole as i64}).into()),
-                }
-            },
+            ASTValue::Int(i) => {Ok(Variable::Int(*i).into())}
+            ASTValue::Float(f) => {Ok(Variable::Float(*f).into())}
             ASTValue::Bool(bool) => Ok(Variable::Bool(*bool).into()),
             ASTValue::String(content) => Ok(Variable::String(content.to_string().into()).into()),
             ASTValue::Char(content) => Ok(Variable::Char(*content).into()),

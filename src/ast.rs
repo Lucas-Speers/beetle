@@ -85,11 +85,8 @@ impl Op {
 
 #[derive(Debug, Clone)]
 pub enum ASTValue {
-    Number {
-        whole: u64,
-        decimal: Option<u64>,
-        negative: bool,
-    },
+    Int(i64),
+    Float(f64),
     String(String),
     Char(char),
     Bool(bool),
@@ -409,10 +406,15 @@ impl ASTParser {
                         if self.next() != RightBracket {self.parse_error("Expected `]`")}
                     }
                 },
-                Number { whole, decimal } => {
+                Int(i) => {
                     expect_value(&values, &operations);
                     self.next();
-                    values.push(ASTValue::Number { whole, decimal, negative: false });
+                    values.push(ASTValue::Int(i));
+                },
+                Float(f) => {
+                    expect_value(&values, &operations);
+                    self.next();
+                    values.push(ASTValue::Float(f));
                 },
                 StringToken(content) => {
                     expect_value(&values, &operations);
