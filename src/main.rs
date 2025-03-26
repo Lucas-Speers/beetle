@@ -23,7 +23,7 @@ fn main() -> Result<(), ()> {
     match args::get_arg() {
         Some(x) => {
             orig_path = PathBuf::from(x);
-            files_to_read.push(orig_path.file_name().unwrap().to_str().unwrap().to_string());
+            files_to_read.push(orig_path.file_name().unwrap().to_str().unwrap().to_owned());
         },
         None => return Err(()),
     }

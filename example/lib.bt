@@ -1,5 +1,5 @@
 
 
 func test() {
-    print("This test works");
+    return "Hello, World!";
 }

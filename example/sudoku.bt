@@ -137,7 +137,7 @@ func guess_one(board) {
                 new_board[y][x] = i;
                 reduce_board(new_board);
                 if (test_sudoku(new_board)) {
-                    print_board(new_board);
+                    // print_board(new_board);
                     guess_one(new_board);
                 }
             }

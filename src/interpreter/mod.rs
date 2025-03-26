@@ -41,7 +41,7 @@ impl CodeState {
             ASTValue::Int(i) => {Ok(Variable::Int(*i).into())}
             ASTValue::Float(f) => {Ok(Variable::Float(*f).into())}
             ASTValue::Bool(bool) => Ok(Variable::Bool(*bool).into()),
-            ASTValue::String(content) => Ok(Variable::String(content.to_string().into()).into()),
+            ASTValue::String(content) => Ok(Variable::String(content.to_owned().into()).into()),
             ASTValue::Char(content) => Ok(Variable::Char(*content).into()),
             ASTValue::Function(Function { name, args }) => {
                 let args = &self.variable_from_asts(&args[..], &local_scope, position)?;
@@ -53,7 +53,7 @@ impl CodeState {
                 } else if self.global_var_scope.contains_key(name) {
                     Ok(self.global_var_scope.get(name).unwrap().clone())
                 } else {
-                    Err(InterpError(position, VarNotFound(name.to_string())))
+                    Err(InterpError(position, VarNotFound(name.to_owned())))
                 }
             },
             ASTValue::Operation(var1, var2, op) => {
@@ -71,7 +71,7 @@ impl CodeState {
                 let mut new_hash = HashMap::new();
 
                 for (k, v) in hash {
-                    new_hash.insert(k.to_string(), self.variable_from_ast(v, local_scope, position)?);
+                    new_hash.insert(k.to_owned(), self.variable_from_ast(v, local_scope, position)?);
                 }
 
                 Ok(Variable::Hash(Box::new(new_hash)).into())
@@ -85,7 +85,7 @@ impl CodeState {
     fn get_function(&self, name: &str, position: (usize, u64, u64)) -> InterpResult<FunctionDecleration> {
         let valid_functions: Vec<&FunctionDecleration> = self.functions.iter().filter(|f| f.name == name).collect();
         if valid_functions.len() == 0 {
-            return Err(InterpError(position, FuncNotFound(name.to_string())));
+            return Err(InterpError(position, FuncNotFound(name.to_owned())));
         }
         return Ok(valid_functions[0].clone());
     }
@@ -304,7 +304,7 @@ impl CodeState {
                 }
                 if let Variable::String(ref s) = *args[0].borrow() {
                     if let Variable::String(ref d) = *args[1].borrow() {
-                        return Ok(Some(Variable::List(s.split(d).map(|a| Variable::String(a.to_string()).into()).collect()).into()));
+                        return Ok(Some(Variable::List(s.split(d).map(|a| Variable::String(a.to_owned()).into()).collect()).into()));
                     }
                 }
                 todo!()
@@ -337,14 +337,14 @@ impl CodeState {
             match &ast.1 {
                 ASTreeType::Let { variable, value } => {
                     // println!("ASTreeType::Let");
-                    current_scope.insert(variable.to_string(), self.variable_from_ast(&value, &current_scope, position)?);
+                    current_scope.insert(variable.to_owned(), self.variable_from_ast(&value, &current_scope, position)?);
                 },
                 ASTreeType::Assign { variable, indexes, value } => {
                     // println!("ASTreeType::Assign");
                     // value to be put into the variable
                     let mut value = self.variable_from_ast(&value, &current_scope, position)?;
                     
-                    match current_scope.get(&variable.to_string()) {
+                    match current_scope.get(&variable.to_owned()) {
                         Some(x) => { // original varialbe
                             let mut changing_var = Rc::clone(x);
                             for i in indexes {
@@ -361,7 +361,7 @@ impl CodeState {
                                                     new_var = Rc::clone(v);
                                                 } else {
                                                     new_var = Variable::None.into();
-                                                    h.insert(s.to_string(), Rc::clone(&new_var));
+                                                    h.insert(s.to_owned(), Rc::clone(&new_var));
                                                 }
                                             } else {return Err(InterpError(position, NoOperation(value.borrow().to_type(), indecie.borrow().to_type(), Op::Indexing)));}
                                         } else {unreachable!()}
@@ -378,17 +378,16 @@ impl CodeState {
                             }
                             *changing_var.borrow_mut() = value.borrow().clone();
                         },
-                        None => return Err(InterpError(position, VarNotFound(variable.to_string()))),
+                        None => return Err(InterpError(position, VarNotFound(variable.to_owned()))),
                     }
                 },
-                ASTreeType::Function(Function { name, args }) => _ = {
+                ASTreeType::Function(Function { name, args }) => {
                     // println!("ASTreeType::Function");
                     let args = &self.variable_from_asts(&args[..], &current_scope, position)?;
                     let ret = self.run_function(name, args, position)?;
                     self.ret = false;
                     self.brk = false;
                     self.con = false;
-                    ret
                 },
                 ASTreeType::If { condition, body } => {
                     // println!("ASTreeType::If");
@@ -446,7 +445,7 @@ impl CodeState {
                     if let Variable::List(list) = &*list_ref.borrow() {
                         let mut loop_scope = current_scope.clone();
                         for i in list {
-                            loop_scope.insert(var.to_string(), Rc::clone(i));
+                            loop_scope.insert(var.to_owned(), Rc::clone(i));
                             let ret_value = self.run_ast_tree(body, &loop_scope)?;
                             if self.ret {return Ok(ret_value);}
                             if self.brk {self.brk = false;break;}

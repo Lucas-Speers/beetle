@@ -1,7 +1,7 @@
 import "lib.bt"
 
 func main() {
-    test();
+    print(test());
     print(5);
     print(5.65);
 }

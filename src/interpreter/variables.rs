@@ -127,7 +127,7 @@ pub fn deep_copy(item: &VarRef) -> VarRef {
             let mut new_hash = HashMap::new();
             
             for (k, v) in hash.iter() {
-                new_hash.insert(k.to_string(), deep_copy(v));
+                new_hash.insert(k.to_owned(), deep_copy(v));
             }
 
             Variable::Hash(Box::new(new_hash)).into()
