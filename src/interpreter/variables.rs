@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::Display, net::TcpListener, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, Copy)]
 #[derive(PartialEq)]
@@ -55,22 +55,22 @@ impl Display for Variable {
             Variable::String(string) => Display::fmt(string, f),
             Variable::Type(var_type) => Display::fmt(var_type, f),
             Variable::List(vec) => {
-                Display::fmt("[", f)
-                .and::<()>(vec.iter().enumerate().map(|(i, v)| 
-                    Display::fmt(&v.borrow(), f)
-                    .and(if (i != vec.len()-1) {write!(f, ", ")} else {Ok(())})).collect()
-                )
-                .and(Display::fmt("]", f))
+                Display::fmt("[", f)?;
+                for (i, v) in vec.iter().enumerate() {
+                    Display::fmt(&v.borrow(), f)?;
+                    if i != vec.len()-1 {write!(f, ", ")?;}
+                }
+                Display::fmt("]", f)
             },
             Variable::Hash(hash) => {
-                Display::fmt("{", f)
-                .and::<()>(hash.iter().enumerate().map(|(i, (k, v))| 
-                    Display::fmt(&k, f)
-                    .and::<()>(Display::fmt("=", f))
-                    .and::<()>(Display::fmt(&v.borrow(), f))
-                    .and(if (i != hash.len()-1) {write!(f, ", ")} else {Ok(())})).collect()
-                )
-                .and(Display::fmt("}", f))
+                Display::fmt("{", f)?;
+                for (i, (k, v)) in hash.iter().enumerate() {
+                    Display::fmt(&k, f)?;
+                    Display::fmt("=", f)?;
+                    Display::fmt(&v.borrow(), f)?;
+                    if i != hash.len()-1 {write!(f, ", ")?;}
+                }
+                Display::fmt("}", f)
             },
         }
     }

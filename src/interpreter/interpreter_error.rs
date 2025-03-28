@@ -21,7 +21,7 @@ pub enum InterpErrorType {
 
 impl Display for InterpError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "At {:?}: ", self.0);
+        write!(f, "At {:?}: ", self.0)?;
         match &self.1 {
             InterpErrorType::VarNotFound(var) => write!(f, "Cannot find variable: {var}"),
             InterpErrorType::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),

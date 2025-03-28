@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, fmt::{Debug, Display}, io::{self, BufRead, BufReader, Read, Write}, net::{TcpListener, TcpStream}, ops::DerefMut, process, rc::Rc, sync::{Mutex, OnceLock}};
+use std::{collections::HashMap, io::{self, BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, ops::DerefMut, process, rc::Rc};
 
 use interpreter_error::{InterpError, InterpResult, InterpErrorType::*};
 use variables::{deep_copy, VarRef, VarType, Variable};
@@ -23,7 +23,6 @@ fn clone_scope(scope: &VariableScope) -> VariableScope {
 pub struct CodeState {
     functions: Vec<FunctionDecleration>,
     global_var_scope: VariableScope,
-    position: (usize, u64, u64),
     ret: bool,
     brk: bool,
     con: bool,
@@ -34,7 +33,7 @@ pub struct CodeState {
 impl CodeState {
     pub fn new(functions: Vec<FunctionDecleration>) -> Self {
         let global_var_scope = VariableScope::new();
-        return CodeState { functions, global_var_scope, position: (0,0,0), ret: false, brk: false, con: false, tcp_listener: None, tcp_stream: None };
+        return CodeState { functions, global_var_scope, ret: false, brk: false, con: false, tcp_listener: None, tcp_stream: None };
     }
     fn variable_from_ast(&mut self, value: &ASTValue, local_scope: &VariableScope, position: (usize, u64, u64)) -> InterpResult<VarRef> {
         return match value {
@@ -116,7 +115,7 @@ impl CodeState {
                 }
                 if args.len() == 1 {
                     print!("{}", args[0].borrow());
-                    io::stdout().flush();
+                    io::stdout().flush().unwrap();
                 }
                 let mut input = String::new();
                 std::io::stdin().read_line(&mut input).expect("failed to readline");
@@ -282,9 +281,9 @@ impl CodeState {
                     return Err(InterpError(position, IncorectArgs));
                 }
                 let mut request = String::new();
-                let (mut incoming, addr) = self.tcp_listener.as_mut().unwrap().accept().unwrap();
+                let (incoming, _addr) = self.tcp_listener.as_mut().unwrap().accept().unwrap();
                 let mut reader = BufReader::new(&incoming);
-                reader.read_line(&mut request);
+                reader.read_line(&mut request).unwrap();
                 self.tcp_stream = Some(incoming);
                 Variable::String(request).into()
             }
@@ -342,7 +341,7 @@ impl CodeState {
                 ASTreeType::Assign { variable, indexes, value } => {
                     // println!("ASTreeType::Assign");
                     // value to be put into the variable
-                    let mut value = self.variable_from_ast(&value, &current_scope, position)?;
+                    let value = self.variable_from_ast(&value, &current_scope, position)?;
                     
                     match current_scope.get(&variable.to_owned()) {
                         Some(x) => { // original varialbe
@@ -384,7 +383,7 @@ impl CodeState {
                 ASTreeType::Function(Function { name, args }) => {
                     // println!("ASTreeType::Function");
                     let args = &self.variable_from_asts(&args[..], &current_scope, position)?;
-                    let ret = self.run_function(name, args, position)?;
+                    let _ret = self.run_function(name, args, position)?;
                     self.ret = false;
                     self.brk = false;
                     self.con = false;

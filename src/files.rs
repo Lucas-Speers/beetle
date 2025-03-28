@@ -1,4 +1,4 @@
-use std::{env, path::Path};
+use std::path::Path;
 
 pub fn read_full_file(path: &Path) -> Result<String, ()> {
 

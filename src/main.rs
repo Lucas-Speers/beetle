@@ -1,10 +1,8 @@
-#![allow(unused)]
-
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ast::FunctionDecleration;
 
-use lex::{Token, TokenType, Tokenizer};
+use lex::Tokenizer;
 
 mod args;
 mod files;
@@ -31,7 +29,7 @@ fn main() -> Result<(), ()> {
     let mut file_index = 0;
     while files_to_read.len() > file_index {
         let file = files::read_full_file(&orig_path.parent().unwrap().join(&PathBuf::from(files_to_read[file_index].clone())))?;
-        let mut tokens = Tokenizer::new(&file, file_index).generate();
+        let tokens = Tokenizer::new(&file, file_index).generate();
 
         let (mut paths, mut functions) = ast::ASTParser::new(tokens).parse_all();
         files_to_read.append(&mut paths);

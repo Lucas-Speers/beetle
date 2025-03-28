@@ -125,7 +125,7 @@ impl Tokenizer {
             // char
             if current_char == '\'' {
                 self.get_next();
-                let mut next_char = self.consume_char(&mut false);
+                let next_char = self.consume_char(&mut false);
                 self.add_token(TokenType::CharToken(next_char));
                 if self.get_next() != '\'' {
                     println!("Missing ' after char");

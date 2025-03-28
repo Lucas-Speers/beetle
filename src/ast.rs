@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, process::exit};
+use std::{collections::HashMap, process::exit};
 
 use crate::lex::{Token, TokenType::{self, *}};
 

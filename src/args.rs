@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::env;
 
 pub fn get_arg() -> Option<String> {
     let mut args = env::args();
