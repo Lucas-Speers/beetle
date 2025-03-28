@@ -1,35 +1,20 @@
 # Beetle
 
-A programming language I'm making
-
-## MAJOR WORK IN PROGRESS
-
-This language is nowhere near done at the moment
+An interpreted programming language
 
 ## How to run
 
-Install Rust and run the following command:
+[Install Rust](https://www.rust-lang.org/tools/install) and run the following command:
 
 ```bash
-cargo run -- example/tictactoe.bt
+cargo run --release -- example/hello_world.bt
 ```
 
-## Features
+It should look something like this:
 
-- Comments
-- Literal Strings
-- Literal Chars
-- Literal Ints
-- Operators (Mostly)
-- Create Variables
-- Assign Variables
-- Functions
-- If/ElseIf/Else
-- While
-- Loop
-- For
-- Return
-- Break/Continue
-- Types
-- Built in Functions
-- Errors
+```
+cargo run --release -- example/hello_world.bt
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running `target\release\beetle.exe example/hello_world.bt`
+Hello, World!
+```

@@ -1,0 +1,6 @@
+
+func main() {
+    
+    main(1);
+    
+}

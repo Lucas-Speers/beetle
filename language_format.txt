@@ -1,6 +1,0 @@
-ABNF
-
-ALL            = [* "import \"" STRING "\"" ] [*FUNCTION]
-FUNCTION       = "func" STRING "(" [ *(VARIABLE_DEF ",") ] ")" TYPE "{" CODE "}"
-VARIABLE_DEF   = STRING ":" TYPE
-TYPE           = STRING ["<" *(STRING ",") ">"]
