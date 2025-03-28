@@ -474,7 +474,6 @@ impl ASTParser {
                     
                     let mut new_hashmap = HashMap::new();
                     loop {
-                        println!("{:?}", self.peek(0));
                         if let RightCurly = self.peek(0) {self.next(); break;}
                         if let StringToken(s) = self.next() {
                             if let Colon = self.next() {
@@ -512,7 +511,7 @@ impl ASTParser {
                 Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }
         }
-        println!("{:?}, {:?}", operations, values);
+        
         'outer: loop {
             if operations.len() == 0 {return values[0].clone();}
             let max = operations.iter().map(|op| op.precidence()).max().unwrap();
