@@ -1,0 +1,35 @@
+
+func main() {
+    print(none);
+
+    print(false);
+    print(true);
+
+    print(7);
+    print(-12);
+    print(365);
+
+    print(5.0);
+    print(-6.74);
+    print(0.0002);
+
+    print('a');
+    print('m');
+    print('&');
+
+    print("Hello, World!");
+    print("");
+    print("こんにちは");
+
+    print(type(5));
+    print(type(""));
+    print(type(0.6));
+
+    print([1, 2, 3]);
+    print([]);
+    print(["hi", 5, 7.2]);
+
+    print({"hi": "Hi", "hello": "Hello"});
+    print({});
+    print({"int": 1, "float": 5.6, "list": [1, 2, 3]});
+}

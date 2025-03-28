@@ -21,7 +21,17 @@ pub fn variable_operation(var1: VarRef, var2: VarRef, op: Op) -> Option<VarRef> 
             } else {unreachable!()}
         },
         
-        (VarType::Int, VarType::Float) => todo!(),
+        (VarType::Int, VarType::Float) => {
+            if let (Variable::Int(x), Variable::Float(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
+                float_operation(x as f64, y, op)
+            } else {unreachable!()}
+        },
+
+        (VarType::Float, VarType::Int) => {
+            if let (Variable::Float(x), Variable::Int(y)) = (var1.borrow().clone(), var2.borrow().clone()) {
+                float_operation(x, y as f64, op)
+            } else {unreachable!()}
+        },
 
         (VarType::Float, VarType::Float) => {
             if let (Variable::Float(x), Variable::Float(y)) = (var1.borrow().clone(), var2.borrow().clone()) {

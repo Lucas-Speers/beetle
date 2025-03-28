@@ -66,7 +66,7 @@ impl Display for Variable {
                 Display::fmt("{", f)?;
                 for (i, (k, v)) in hash.iter().enumerate() {
                     Display::fmt(&k, f)?;
-                    Display::fmt("=", f)?;
+                    Display::fmt(": ", f)?;
                     Display::fmt(&v.borrow(), f)?;
                     if i != hash.len()-1 {write!(f, ", ")?;}
                 }
