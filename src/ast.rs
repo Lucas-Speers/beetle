@@ -470,7 +470,12 @@ impl ASTParser {
                     self.next();
                     operations.push(Op::Or);
                 },
-                LeftParren => todo!(),
+                LeftParren => {
+                    self.expect_value(&values, &operations);
+                    self.next();
+                    values.push(self.parse_value());
+                    self.next();
+                },
                 LeftCurly => {
                     if let StringToken(_) = self.peek(1) {
                         self.expect_value(&values, &operations);
