@@ -69,6 +69,7 @@ pub enum Op {
     Indexing,
     And,
     Or,
+    Modulus,
 }
 
 impl Op {
@@ -77,7 +78,7 @@ impl Op {
             Op::And | Op::Or => 0,
             Op::Equality | Op::NotEquality => 1,
             Op::Addition | Op::Subtraction => 2,
-            Op::Multiplication | Op::Division => 3,
+            Op::Multiplication | Op::Division | Op::Modulus => 3,
             Op::Indexing => 4,
         }
     }
@@ -514,6 +515,11 @@ impl ASTParser {
                     self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::NotEquality);
+                },
+                Modulus => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Modulus);
                 },
                 Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }

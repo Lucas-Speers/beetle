@@ -96,6 +96,7 @@ fn int_operation(x: i64, y: i64, op: Op) -> Option<VarRef> {
         Op::Indexing => return None,
         Op::And => Variable::Int(x&y).into(),
         Op::Or => Variable::Int(x|y).into(),
+        Op::Modulus => Variable::Int(x%y).into(),
     })
 }
 
@@ -110,6 +111,7 @@ fn float_operation(x: f64, y: f64, op: Op) -> Option<VarRef> {
         Op::Indexing => return None,
         Op::And => return None,
         Op::Or => return None,
+        Op::Modulus => Variable::Float(x%y).into(),
     })
 }
 
