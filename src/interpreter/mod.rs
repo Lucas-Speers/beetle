@@ -158,10 +158,10 @@ impl CodeState {
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
                         l.insert(i as usize, deep_copy(&args[2]));
-                    } else {return Err(InterpError(position, IncorectType(VarType::List, args[1].borrow().to_type())));}
-                }
+                    } else {return Err(InterpError(position, IncorectType(VarType::Int, args[1].borrow().to_type())));}
+                } else {return Err(InterpError(position, IncorectType(VarType::List, args[0].borrow().to_type())));}
 
-                todo!()
+                Variable::None.into()
             }
             "remove" => {
                 if args.len() != 2 {

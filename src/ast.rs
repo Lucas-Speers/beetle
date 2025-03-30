@@ -370,23 +370,25 @@ impl ASTParser {
         self.parse_error("expected function name");
     }
     
+    fn expect_value(&self, values: &Vec<ASTValue>, operations: &Vec<Op>) {
+        if values.len() == operations.len() {return;}
+        println!("error in parsing value at {:?}", self.get_position());
+        dbg!(values, operations);
+        exit(1);
+    }
+    fn expect_operation(&self, values: &Vec<ASTValue>, operations: &Vec<Op>) {
+        if values.len()-1 == operations.len() {return;}
+        println!("error in parsing operation {:?}", self.get_position());
+        dbg!(values, operations);
+        exit(1);
+    }
     fn parse_value(&mut self) -> ASTValue {
-        fn expect_value(values: &Vec<ASTValue>, operations: &Vec<Op>) {
-            if values.len() == operations.len() {return;}
-            println!("error in parsing value");
-            exit(1);
-        }
-        fn expect_operation(values: &Vec<ASTValue>, operations: &Vec<Op>) {
-            if values.len()-1 == operations.len() {return;}
-            println!("error in parsing operation");
-            exit(1);
-        }
         let mut values = Vec::new();
         let mut operations = Vec::new();
         loop {
             match self.peek(0) {
                 Identifier(name) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     if name == "true" {self.next();values.push(ASTValue::Bool(true));}
                     else if name == "false" {self.next();values.push(ASTValue::Bool(false));}
                     else if name == "none" {self.next();values.push(ASTValue::None);}
@@ -407,17 +409,17 @@ impl ASTParser {
                     }
                 },
                 Int(i) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Int(i));
                 },
                 Float(f) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Float(f));
                 },
                 StringToken(content) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::String(content));
 
@@ -430,12 +432,12 @@ impl ASTParser {
                     }
                 },
                 CharToken(content) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Char(content));
                 },
                 Addition => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Addition);
                 },
@@ -443,33 +445,38 @@ impl ASTParser {
                     if values.len() == 0 {
                         values.push(ASTValue::Int(0));
                     }
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Subtraction);
                 },
                 Multiplication => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Multiplication);
                 },
                 Division => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Division);
                 },
                 And => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::And);
                 },
                 Or => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Or);
                 },
                 LeftParren => todo!(),
                 LeftCurly => {
-                    expect_value(&values, &operations);
+                    if let StringToken(_) = self.peek(1) {
+                        self.expect_value(&values, &operations);
+                    }
+                    else if let RightCurly = self.peek(1) {
+                        self.expect_value(&values, &operations);
+                    } else {break;}
                     self.next();
                     
                     let mut new_hashmap = HashMap::new();
@@ -486,7 +493,7 @@ impl ASTParser {
                     values.push(ASTValue::Hash(new_hashmap));
                 }
                 LeftBracket => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     let mut v = Vec::new();
                     loop {
@@ -499,12 +506,12 @@ impl ASTParser {
                 Colon => todo!(),
                 Equal => todo!(),
                 DoubleEqual => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Equality);
                 },
                 NotEqual => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::NotEquality);
                 },
