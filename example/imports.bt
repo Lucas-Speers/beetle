@@ -4,5 +4,6 @@ func main() {
     print(test());
     print(5);
     print(5.65);
-    print(7%2);
+    print(7>2);
+    print(7<2);
 }

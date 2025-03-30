@@ -70,13 +70,15 @@ pub enum Op {
     And,
     Or,
     Modulus,
+    LessThan,
+    GreaterThan,
 }
 
 impl Op {
     fn precidence(&self) -> u8 {
         match self {
             Op::And | Op::Or => 0,
-            Op::Equality | Op::NotEquality => 1,
+            Op::Equality | Op::NotEquality | Op::LessThan | Op::GreaterThan => 1,
             Op::Addition | Op::Subtraction => 2,
             Op::Multiplication | Op::Division | Op::Modulus => 3,
             Op::Indexing => 4,
@@ -520,6 +522,16 @@ impl ASTParser {
                     self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Modulus);
+                },
+                LessThan => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::LessThan);
+                },
+                GreaterThan => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::GreaterThan);
                 },
                 Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }
