@@ -214,6 +214,18 @@ impl CodeState {
                 if let Variable::Char(c) = &*args[0].borrow() {
                     return Ok(Some(Variable::Int(c.to_string().parse().unwrap()).into()));
                 }
+                if let Variable::Float(c) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Int(*c as i64).into()));
+                }
+                Variable::None.into()
+            }
+            "float" => {
+                if args.len() != 1 {
+                    return Err(InterpError(position, IncorectArgs));
+                }
+                if let Variable::Int(s) = &*args[0].borrow() {
+                    return Ok(Some(Variable::Float(*s as f64).into()));
+                }
                 Variable::None.into()
             }
             "str" => {
