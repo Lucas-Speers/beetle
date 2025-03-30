@@ -445,9 +445,7 @@ impl ASTParser {
                     operations.push(Op::Addition);
                 },
                 Subtraction => {
-                    if values.len() == 0 {
-                        values.push(ASTValue::Int(0));
-                    }
+                    if values.len() == operations.len() {values.push(ASTValue::Int(0));}
                     self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Subtraction);
