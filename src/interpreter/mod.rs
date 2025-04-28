@@ -111,7 +111,7 @@ impl CodeState {
             }
             "input" => {
                 if args.len() >= 2 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if args.len() == 1 {
                     print!("{}", args[0].borrow());
@@ -129,62 +129,62 @@ impl CodeState {
             }
             "copy" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 variables::deep_copy(&args[0])
             }
             "push" => {
                 if args.len() != 2 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     l.push(deep_copy(&args[1]));
-                } else {return Err(InterpError(position, IncorectType(VarType::List, args[0].borrow().to_type())));}
+                } else {return Err(InterpError(position, IncorrectType(VarType::List, args[0].borrow().to_type())));}
 
                 Variable::None.into()
             }
             "pop" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     return Ok(l.pop());
-                } else {return Err(InterpError(position, IncorectType(VarType::List, args[0].borrow().to_type())));}
+                } else {return Err(InterpError(position, IncorrectType(VarType::List, args[0].borrow().to_type())));}
             }
             "insert" => {
                 if args.len() != 3 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
                         l.insert(i as usize, deep_copy(&args[2]));
-                    } else {return Err(InterpError(position, IncorectType(VarType::List, args[1].borrow().to_type())));}
+                    } else {return Err(InterpError(position, IncorrectType(VarType::List, args[1].borrow().to_type())));}
                 }
 
                 todo!()
             }
             "remove" => {
                 if args.len() != 2 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow_mut() {
                         return Ok(Some(l.remove(i as usize)));
                     }
-                    return Err(InterpError(position, IncorectType(VarType::Int, args[1].borrow().to_type())));
+                    return Err(InterpError(position, IncorrectType(VarType::Int, args[1].borrow().to_type())));
                 }
 
                 todo!()
             }
             "set" => {
                 if args.len() != 3 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     if let Variable::Int(i) = *args[1].borrow() {
                         l[i as usize] = deep_copy(&args[2]);
                         return Ok(Some(Variable::None.into()));
-                    } else {return Err(InterpError(position, IncorectType(VarType::List, args[1].borrow().to_type())));}
+                    } else {return Err(InterpError(position, IncorrectType(VarType::List, args[1].borrow().to_type())));}
                 }
 
                 if let Variable::String(ref mut l) = *args[0].borrow_mut() {
@@ -192,21 +192,21 @@ impl CodeState {
                         if let Variable::Char(c) = *args[2].borrow() {
                             l.replace_range((i as usize)..(i as usize + 1), &c.to_string());
                             return Ok(Some(Variable::None.into()));
-                        } else {return Err(InterpError(position, IncorectType(VarType::Char, args[2].borrow().to_type())));}
-                    } else {return Err(InterpError(position, IncorectType(VarType::List, args[1].borrow().to_type())));}
+                        } else {return Err(InterpError(position, IncorrectType(VarType::Char, args[2].borrow().to_type())));}
+                    } else {return Err(InterpError(position, IncorrectType(VarType::List, args[1].borrow().to_type())));}
                 }
 
                 todo!()
             }
             "type" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 Variable::Type(args[0].borrow().to_type()).into()
             }
             "int" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::String(s) = &*args[0].borrow() {
                     return Ok(Some(Variable::Int(s.parse().unwrap()).into()));
@@ -218,7 +218,7 @@ impl CodeState {
             }
             "str" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::Int(i) = &*args[0].borrow() {
                     return Ok(Some(Variable::String(i.to_string()).into()));
@@ -227,7 +227,7 @@ impl CodeState {
             }
             "len" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(l) = &*args[0].borrow() {
                     return Ok(Some(Variable::Int(l.len() as i64).into()))
@@ -239,7 +239,7 @@ impl CodeState {
             }
             "range" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::Int(l) = &*args[0].borrow() {
                     return Ok(Some(
@@ -254,7 +254,7 @@ impl CodeState {
             }
             "contains" => {
                 if args.len() != 2 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::List(ref mut l) = *args[0].borrow_mut() {
                     Variable::Bool(l.contains(&args[1])).into()
@@ -262,7 +262,7 @@ impl CodeState {
             }
             "tcp_bind" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::String(ref s) = *args[0].borrow() {
                     self.tcp_listener = Some(TcpListener::bind(s).unwrap());
@@ -271,14 +271,14 @@ impl CodeState {
             }
             "tcp_unbind" => {
                 if args.len() != 0 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 self.tcp_listener = None;
                 Variable::None.into()
             }
             "tcp_listen" => {
                 if args.len() != 0 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 let mut request = String::new();
                 let (incoming, _addr) = self.tcp_listener.as_mut().unwrap().accept().unwrap();
@@ -289,7 +289,7 @@ impl CodeState {
             }
             "tcp_write" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::String(ref s) = *args[0].borrow() {
                     self.tcp_stream.as_mut().unwrap().write_all(s.as_bytes()).unwrap();
@@ -299,7 +299,7 @@ impl CodeState {
             }
             "split" => {
                 if args.len() != 2 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::String(ref s) = *args[0].borrow() {
                     if let Variable::String(ref d) = *args[1].borrow() {
@@ -315,7 +315,7 @@ impl CodeState {
         if let Some(value) = self.built_in_funtion(function_name, args, position)? {return Ok(value);}
         let function = self.get_function(function_name, position)?;
         let mut function_scope = VariableScope::new();
-        if function.args.len() != args.len() {return Err(InterpError(function.position, IncorectArgs));}
+        if function.args.len() != args.len() {return Err(InterpError(function.position, IncorrectArgs));}
         for arg in 0..args.len() {
             function_scope.insert(function.args[arg].clone(), Rc::clone(&args[arg]));
         }
@@ -451,7 +451,7 @@ impl CodeState {
                             if self.con {self.con = false;}
                         }
                     } else {
-                        return Err(InterpError(position, IncorectType(VarType::List, list_ref.borrow().to_type())));
+                        return Err(InterpError(position, IncorrectType(VarType::List, list_ref.borrow().to_type())));
                     };
                 },
                 ASTreeType::Break => {

@@ -80,7 +80,7 @@ func reduce_board(board) {
                 push(taken, board[i][j]);
             }
         }
-        // remove incorect posibilities
+        // remove incorrect posibilities
         for j in range(9) {
             if (type(board[i][j]) == List) {
                 let new_posibilities = [];
@@ -105,7 +105,7 @@ func reduce_board(board) {
                 push(taken[j], board[i][j]);
             }
         }
-        // remove incorect posibilities
+        // remove incorrect posibilities
         for j in range(9) {
             if (type(board[i][j]) == List) {
                 let new_posibilities = [];

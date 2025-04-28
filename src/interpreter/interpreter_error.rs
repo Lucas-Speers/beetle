@@ -14,9 +14,9 @@ pub struct InterpError(
 pub enum InterpErrorType {
     VarNotFound(String),
     FuncNotFound(String),
-    IncorectArgs,
+    IncorrectArgs,
     NoOperation(VarType, VarType, Op),
-    IncorectType(VarType, VarType),
+    IncorrectType(VarType, VarType),
 }
 
 impl Display for InterpError {
@@ -25,9 +25,9 @@ impl Display for InterpError {
         match &self.1 {
             InterpErrorType::VarNotFound(var) => write!(f, "Cannot find variable: {var}"),
             InterpErrorType::FuncNotFound(func) => write!(f, "Cannot find function: {func}"),
-            InterpErrorType::IncorectArgs => write!(f, "Incorect arguments passed to function"),
+            InterpErrorType::IncorrectArgs => write!(f, "Incorrect arguments passed to function"),
             InterpErrorType::NoOperation(x, y, op) => write!(f, "No operation found for {op:?} of {x} and {y}"),
-            InterpErrorType::IncorectType(t1, t2) => write!(f, "Expected type {t1}, got type {t2}"),
+            InterpErrorType::IncorrectType(t1, t2) => write!(f, "Expected type {t1}, got type {t2}"),
         }
     }
 }
