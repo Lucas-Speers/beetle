@@ -221,7 +221,7 @@ impl CodeState {
             }
             "float" => {
                 if args.len() != 1 {
-                    return Err(InterpError(position, IncorectArgs));
+                    return Err(InterpError(position, IncorrectArgs));
                 }
                 if let Variable::Int(s) = &*args[0].borrow() {
                     return Ok(Some(Variable::Float(*s as f64).into()));
