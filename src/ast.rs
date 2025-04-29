@@ -69,15 +69,18 @@ pub enum Op {
     Indexing,
     And,
     Or,
+    Modulus,
+    LessThan,
+    GreaterThan,
 }
 
 impl Op {
     fn precidence(&self) -> u8 {
         match self {
             Op::And | Op::Or => 0,
-            Op::Equality | Op::NotEquality => 1,
+            Op::Equality | Op::NotEquality | Op::LessThan | Op::GreaterThan => 1,
             Op::Addition | Op::Subtraction => 2,
-            Op::Multiplication | Op::Division => 3,
+            Op::Multiplication | Op::Division | Op::Modulus => 3,
             Op::Indexing => 4,
         }
     }
@@ -370,23 +373,25 @@ impl ASTParser {
         self.parse_error("expected function name");
     }
     
+    fn expect_value(&self, values: &Vec<ASTValue>, operations: &Vec<Op>) {
+        if values.len() == operations.len() {return;}
+        println!("error in parsing value at {:?}", self.get_position());
+        dbg!(values, operations);
+        exit(1);
+    }
+    fn expect_operation(&self, values: &Vec<ASTValue>, operations: &Vec<Op>) {
+        if values.len()-1 == operations.len() {return;}
+        println!("error in parsing operation {:?}", self.get_position());
+        dbg!(values, operations);
+        exit(1);
+    }
     fn parse_value(&mut self) -> ASTValue {
-        fn expect_value(values: &Vec<ASTValue>, operations: &Vec<Op>) {
-            if values.len() == operations.len() {return;}
-            println!("error in parsing value");
-            exit(1);
-        }
-        fn expect_operation(values: &Vec<ASTValue>, operations: &Vec<Op>) {
-            if values.len()-1 == operations.len() {return;}
-            println!("error in parsing operation");
-            exit(1);
-        }
         let mut values = Vec::new();
         let mut operations = Vec::new();
         loop {
             match self.peek(0) {
                 Identifier(name) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     if name == "true" {self.next();values.push(ASTValue::Bool(true));}
                     else if name == "false" {self.next();values.push(ASTValue::Bool(false));}
                     else if name == "none" {self.next();values.push(ASTValue::None);}
@@ -407,17 +412,17 @@ impl ASTParser {
                     }
                 },
                 Int(i) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Int(i));
                 },
                 Float(f) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Float(f));
                 },
                 StringToken(content) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::String(content));
 
@@ -430,46 +435,54 @@ impl ASTParser {
                     }
                 },
                 CharToken(content) => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     values.push(ASTValue::Char(content));
                 },
                 Addition => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Addition);
                 },
                 Subtraction => {
-                    if values.len() == 0 {
-                        values.push(ASTValue::Int(0));
-                    }
-                    expect_operation(&values, &operations);
+                    if values.len() == operations.len() {values.push(ASTValue::Int(0));}
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Subtraction);
                 },
                 Multiplication => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Multiplication);
                 },
                 Division => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Division);
                 },
                 And => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::And);
                 },
                 Or => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Or);
                 },
-                LeftParren => todo!(),
+                LeftParren => {
+                    self.expect_value(&values, &operations);
+                    self.next();
+                    values.push(self.parse_value());
+                    self.next();
+                },
                 LeftCurly => {
-                    expect_value(&values, &operations);
+                    if let StringToken(_) = self.peek(1) {
+                        self.expect_value(&values, &operations);
+                    }
+                    else if let RightCurly = self.peek(1) {
+                        self.expect_value(&values, &operations);
+                    } else {break;}
                     self.next();
                     
                     let mut new_hashmap = HashMap::new();
@@ -486,7 +499,7 @@ impl ASTParser {
                     values.push(ASTValue::Hash(new_hashmap));
                 }
                 LeftBracket => {
-                    expect_value(&values, &operations);
+                    self.expect_value(&values, &operations);
                     self.next();
                     let mut v = Vec::new();
                     loop {
@@ -499,14 +512,29 @@ impl ASTParser {
                 Colon => todo!(),
                 Equal => todo!(),
                 DoubleEqual => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::Equality);
                 },
                 NotEqual => {
-                    expect_operation(&values, &operations);
+                    self.expect_operation(&values, &operations);
                     self.next();
                     operations.push(Op::NotEquality);
+                },
+                Modulus => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::Modulus);
+                },
+                LessThan => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::LessThan);
+                },
+                GreaterThan => {
+                    self.expect_operation(&values, &operations);
+                    self.next();
+                    operations.push(Op::GreaterThan);
                 },
                 Semicolon | RightParren | RightCurly | RightBracket | Comma => break,
             }

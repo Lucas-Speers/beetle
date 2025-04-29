@@ -32,6 +32,9 @@ pub enum TokenType {
     Equal,
     DoubleEqual,
     NotEqual,
+    Modulus,
+    LessThan,
+    GreaterThan,
 }
 
 pub struct Tokenizer {
@@ -180,6 +183,9 @@ impl Tokenizer {
                 ':' => self.add_token(TokenType::Colon),
                 ',' => self.add_token(TokenType::Comma),
                 '=' => self.add_token(TokenType::Equal),
+                '%' => self.add_token(TokenType::Modulus),
+                '<' => self.add_token(TokenType::LessThan),
+                '>' => self.add_token(TokenType::GreaterThan),
                 _ => {
                     let mut name = String::new();
                     loop {
@@ -187,7 +193,7 @@ impl Tokenizer {
                         let next_char = self.input[self.index];
                         
                         if next_char.is_whitespace() {break;}
-                        if vec![';','+','-','*','/','&','|','(',')','{','}','[',']',':',',','='].contains(&next_char) {break;}
+                        if vec![';','+','-','*','/','&','|','(',')','{','}','[',']',':',',','=','%','<','>'].contains(&next_char) {break;}
                         
                         self.get_next();
                         name.push(next_char);
