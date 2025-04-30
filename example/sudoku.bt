@@ -1,15 +1,4 @@
 func main() {
-    // let board = [
-    //     "5___1___4",
-    //     "274___6__",
-    //     "_8_9_4___",
-    //     "81_46_3_2",
-    //     "__2_3_1__",
-    //     "7_6_91_58",
-    //     "___5_3_1_",
-    //     "__5___927",
-    //     "1___2___3",
-    // ];
 
     let board = [
         "__814_9_2",
@@ -23,19 +12,21 @@ func main() {
         "61_____2_",
     ];
 
-    // let board = [
-    //     "___1_2___",
-    //     "_6_____7_",
-    //     "__8___9__",
-    //     "4_______3",
-    //     "_5___7___",
-    //     "2___8___1",
-    //     "__9___8_5",
-    //     "_7_____6_",
-    //     "___3_4___",
-    // ];
-
     let board = compile_board(board);
+
+    for row in board {
+        for number in row {
+            if (type(number) == type(0)) {
+                printsl(" ", number);
+            } else {
+                printsl("  ");
+            }
+        }
+        print();
+    }
+
+    print("\nSolving...\n");
+
     reduce_board(board);
     guess_one(board);
 }
@@ -145,7 +136,12 @@ func guess_one(board) {
         }
     }
     if (has_space == false) {
-        print(board);
+        for row in board {
+            for number in row {
+                printsl(" ", number);
+            }
+            print();
+        }
         exit();
     }
 }
